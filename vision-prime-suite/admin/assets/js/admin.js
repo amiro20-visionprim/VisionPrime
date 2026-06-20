@@ -282,6 +282,32 @@
 			}).always(function () { $btn.prop('disabled', false); });
 		});
 
+		// --- Title A/B testing on real GSC CTR ---
+		$('#vp-title-ab-btn').on('click', function () {
+			var postId = $('#vp-title-ab-post').val();
+			var $result = $('#vp-title-ab-result');
+			if (!postId) { $result.html('<p class="vp-error">یک پست انتخاب کنید.</p>'); return; }
+			var $btn = $(this).prop('disabled', true);
+			$result.html('<p>در حال دریافت داده از Search Console...</p>');
+
+			postAjax('vp_title_ab_compare', { post_id: postId }).done(function (res) {
+				if (!res.success) { $result.html('<p class="vp-error">' + res.data.message + '</p>'); return; }
+				if (!res.data.periods || !res.data.periods.length) {
+					$result.html('<p>هنوز هیچ تغییر عنوانی برای این پست ثبت نشده. وقتی عنوان را عوض کنید، بازه‌ی جدید خودکار ثبت می‌شود.</p>');
+					return;
+				}
+				var html = '<div class="vp-card"><h2>مقایسه‌ی عنوان‌ها — ' + res.data.page_url + '</h2>';
+				html += '<table class="widefat striped"><thead><tr><th>عنوان</th><th>شروع</th><th>پایان</th><th>کلیک</th><th>ایمپرشن</th><th>CTR واقعی</th></tr></thead><tbody>';
+				res.data.periods.forEach(function (p, i) {
+					html += '<tr' + (i === 0 ? ' style="font-weight:bold;background:#eaffea;"' : '') + '><td>' + p.title + (i === 0 ? ' 🏆' : '') + '</td><td>' + p.started_at + '</td><td>' + (p.ended_at || 'تاکنون') + '</td><td>' + p.clicks + '</td><td>' + p.impressions + '</td><td>' + p.ctr + '%' + (p.note ? '<br><small>' + p.note + '</small>' : '') + '</td></tr>';
+				});
+				html += '</tbody></table></div>';
+				$result.html(html);
+			}).fail(function () {
+				$result.html('<p class="vp-error">خطای ارتباط با سرور.</p>');
+			}).always(function () { $btn.prop('disabled', false); });
+		});
+
 		// --- Google Search Console: real-data opportunity hunting ---
 		function gscEsc(s) {
 			return $('<div>').text(s == null ? '' : String(s)).html();

@@ -203,6 +203,17 @@ class VP_Activator {
 			KEY snapshot_date (snapshot_date)
 		) $charset_collate;";
 
+		$sql[] = "CREATE TABLE {$prefix}vp_title_history (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			post_id BIGINT UNSIGNED NOT NULL,
+			title VARCHAR(500) NOT NULL,
+			started_at DATETIME NOT NULL,
+			ended_at DATETIME NULL,
+			created_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY post_id (post_id)
+		) $charset_collate;";
+
 		foreach ( $sql as $statement ) {
 			dbDelta( $statement );
 		}

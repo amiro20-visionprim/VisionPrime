@@ -27,6 +27,7 @@ class VP_Admin {
 		add_submenu_page( 'vp-suite', 'سرچ کنسول (شکار پوزیشن)', 'سرچ کنسول', $cap, 'vp-suite-search-console', array( $this, 'render_search_console' ) );
 		add_submenu_page( 'vp-suite', 'تشخیص کانیبالیزیشن', 'کانیبالیزیشن کلمه‌ی کلیدی', $cap, 'vp-suite-cannibalization', array( $this, 'render_cannibalization' ) );
 		add_submenu_page( 'vp-suite', 'تاریخچه رتبه و افت محتوا', 'تاریخچه رتبه', $cap, 'vp-suite-rank-tracker', array( $this, 'render_rank_tracker' ) );
+		add_submenu_page( 'vp-suite', 'تست A/B عنوان (CTR واقعی)', 'تست A/B عنوان', $cap, 'vp-suite-title-ab', array( $this, 'render_title_ab' ) );
 		add_submenu_page( 'vp-suite', 'ریویو محتوای موجود', 'ریویو محتوا', 'edit_posts', 'vp-suite-review', array( $this, 'render_review' ) );
 		add_submenu_page( 'vp-suite', 'شبکه‌های اجتماعی', 'شبکه‌های اجتماعی', $cap, 'vp-suite-social', array( $this, 'render_social' ) );
 		add_submenu_page( 'vp-suite', 'گزارش عملکرد', 'گزارش عملکرد', $cap, 'vp-suite-reports', array( $this, 'render_reports' ) );
@@ -117,6 +118,25 @@ class VP_Admin {
 		$this->view(
 			'rank-tracker',
 			array(
+				'gsc_connected' => class_exists( 'VP_Search_Console' ) && VP_Search_Console::is_connected(),
+			)
+		);
+	}
+
+	public function render_title_ab() {
+		$posts = get_posts(
+			array(
+				'post_type'      => array( 'post', 'page', 'product' ),
+				'post_status'    => 'publish',
+				'posts_per_page' => 200,
+				'orderby'        => 'modified',
+				'order'          => 'DESC',
+			)
+		);
+		$this->view(
+			'title-ab',
+			array(
+				'posts'         => $posts,
 				'gsc_connected' => class_exists( 'VP_Search_Console' ) && VP_Search_Console::is_connected(),
 			)
 		);
