@@ -3,6 +3,25 @@
 	<h1 class="vp-title">مدیریت شبکه‌های اجتماعی</h1>
 
 	<div class="vp-card">
+		<h2>آمار تعاملی هر پلتفرم</h2>
+		<table class="widefat striped">
+			<thead><tr><th>پلتفرم</th><th>حساب‌های فعال</th><th>ارسال موفق</th><th>ارسال ناموفق</th><th>تعامل کل</th></tr></thead>
+			<tbody>
+			<?php foreach ( $stats as $key => $s ) : ?>
+				<tr>
+					<td><strong><?php echo esc_html( $s['label'] ); ?></strong></td>
+					<td><?php echo (int) $s['accounts']; ?></td>
+					<td style="color:#166534;"><?php echo (int) $s['sent']; ?></td>
+					<td style="color:<?php echo $s['failed'] ? '#991b1b' : '#888'; ?>;"><?php echo (int) $s['failed']; ?></td>
+					<td><?php echo (int) $s['engagement']; ?></td>
+				</tr>
+			<?php endforeach; ?>
+			</tbody>
+		</table>
+		<p class="description">آمار تعامل به‌صورت ساعتی توسط زمان‌بند به‌روزرسانی می‌شود (در صورت پشتیبانی API هر پلتفرم).</p>
+	</div>
+
+	<div class="vp-card">
 		<h2>افزودن حساب جدید</h2>
 		<form id="vp-social-account-form">
 			<table class="form-table">

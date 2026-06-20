@@ -48,6 +48,60 @@ class VP_Social_Manager {
 		return self::$channels[ $key ] ?? null;
 	}
 
+	/**
+	 * Aggregates send/engagement metrics per channel from vp_social_posts,
+	 * powering the social analytics dashboard. Engagement (views/reactions)
+	 * is read from the per-account stats option refreshed by VP_Cron.
+	 *
+	 * @return array channel_key => ['label','sent','failed','accounts','engagement']
+	 */
+	public static function get_channel_stats() {
+		global $wpdb;
+
+		$rows = $wpdb->get_results(
+			"SELECT a.channel AS channel, p.status AS status, COUNT(*) AS c
+			 FROM {$wpdb->prefix}vp_social_posts p
+			 INNER JOIN {$wpdb->prefix}vp_social_accounts a ON a.id = p.account_id
+			 GROUP BY a.channel, p.status"
+		);
+
+		$stats = array();
+		foreach ( self::$channels as $key => $channel ) {
+			$stats[ $key ] = array(
+				'label'      => $channel->get_label(),
+				'sent'       => 0,
+				'failed'     => 0,
+				'accounts'   => 0,
+				'engagement' => 0,
+			);
+		}
+
+		foreach ( $rows as $row ) {
+			if ( ! isset( $stats[ $row->channel ] ) ) {
+				continue;
+			}
+			if ( 'sent' === $row->status ) {
+				$stats[ $row->channel ]['sent'] += (int) $row->c;
+			} elseif ( 'failed' === $row->status ) {
+				$stats[ $row->channel ]['failed'] += (int) $row->c;
+			}
+		}
+
+		$accounts = $wpdb->get_results( "SELECT id, channel FROM {$wpdb->prefix}vp_social_accounts WHERE is_active = 1" );
+		foreach ( $accounts as $acc ) {
+			if ( ! isset( $stats[ $acc->channel ] ) ) {
+				continue;
+			}
+			$stats[ $acc->channel ]['accounts']++;
+			$engagement = get_option( 'vp_social_stats_' . $acc->id );
+			if ( is_array( $engagement ) && isset( $engagement['engagement'] ) ) {
+				$stats[ $acc->channel ]['engagement'] += (int) $engagement['engagement'];
+			}
+		}
+
+		return $stats;
+	}
+
 	public function ajax_save_account() {
 		check_ajax_referer( 'vp_suite_nonce', 'nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {

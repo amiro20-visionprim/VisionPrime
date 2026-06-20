@@ -24,6 +24,7 @@ class VP_Loader {
 		require_once VP_SUITE_DIR . 'includes/class-vp-content-generator.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-image-generator.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-seo-engine.php';
+		require_once VP_SUITE_DIR . 'includes/class-vp-seo-metabox.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-rankmath-sync.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-queue.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-competitor-analysis.php';
@@ -44,6 +45,7 @@ class VP_Loader {
 		new VP_Content_Generator();
 		new VP_Image_Generator();
 		new VP_SEO_Engine();
+		new VP_SEO_Metabox();
 		new VP_Rankmath_Sync();
 		new VP_Queue();
 		new VP_Competitor_Analysis();

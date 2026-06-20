@@ -83,7 +83,14 @@ class VP_Admin {
 	public function render_social() {
 		global $wpdb;
 		$accounts = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}vp_social_accounts ORDER BY id DESC" );
-		$this->view( 'social', array( 'channels' => VP_Social_Manager::get_channels(), 'accounts' => $accounts ) );
+		$this->view(
+			'social',
+			array(
+				'channels' => VP_Social_Manager::get_channels(),
+				'accounts' => $accounts,
+				'stats'    => VP_Social_Manager::get_channel_stats(),
+			)
+		);
 	}
 
 	public function render_reports() {
