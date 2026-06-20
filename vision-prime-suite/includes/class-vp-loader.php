@@ -33,6 +33,8 @@ class VP_Loader {
 		require_once VP_SUITE_DIR . 'includes/class-vp-linking.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-content-calendar.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-cannibalization.php';
+		require_once VP_SUITE_DIR . 'includes/class-vp-pre-publish-qa.php';
+		require_once VP_SUITE_DIR . 'includes/class-vp-schema-generator.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-catalog.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-reports.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-cron.php';
@@ -59,6 +61,7 @@ class VP_Loader {
 		new VP_Linking();
 		new VP_Content_Calendar();
 		new VP_Cannibalization();
+		new VP_Schema_Generator();
 		new VP_Catalog();
 		new VP_Reports();
 		new VP_Social_Manager();

@@ -38,6 +38,8 @@ class VP_Settings {
 			'auto_internal_linking'    => true,
 			'auto_external_linking'    => true,
 			'auto_social_distribution' => false,
+			'brand_voice'              => '',
+			'pre_publish_qa'           => true,
 		);
 
 		return wp_parse_args( get_option( self::OPTION, array() ), $defaults );

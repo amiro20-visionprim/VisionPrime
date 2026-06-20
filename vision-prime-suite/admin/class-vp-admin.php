@@ -169,7 +169,7 @@ class VP_Admin {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
-		$fields = array( 'default_provider', 'article_prompt', 'product_prompt', 'seo_prompt', 'competitor_prompt' );
+		$fields = array( 'default_provider', 'article_prompt', 'product_prompt', 'seo_prompt', 'competitor_prompt', 'brand_voice' );
 		foreach ( $fields as $field ) {
 			if ( isset( $_POST[ $field ] ) ) {
 				VP_Settings::update( $field, wp_kses_post( wp_unslash( $_POST[ $field ] ) ) );
@@ -193,6 +193,7 @@ class VP_Admin {
 		VP_Settings::update( 'auto_internal_linking', ! empty( $_POST['auto_internal_linking'] ) );
 		VP_Settings::update( 'auto_external_linking', ! empty( $_POST['auto_external_linking'] ) );
 		VP_Settings::update( 'auto_social_distribution', ! empty( $_POST['auto_social_distribution'] ) );
+		VP_Settings::update( 'pre_publish_qa', ! empty( $_POST['pre_publish_qa'] ) );
 
 		add_action( 'admin_notices', function () {
 			echo '<div class="notice notice-success"><p>تنظیمات ذخیره شد.</p></div>';

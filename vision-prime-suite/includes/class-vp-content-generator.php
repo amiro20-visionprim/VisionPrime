@@ -50,6 +50,11 @@ class VP_Content_Generator {
 		$prompt_key    = 'product' === $type ? 'product_prompt' : 'article_prompt';
 		$system_prompt = VP_Settings::get( $prompt_key );
 
+		$brand_voice = VP_Settings::get( 'brand_voice' );
+		if ( ! empty( $brand_voice ) ) {
+			$system_prompt .= "\n\nلحن و هویت برند این سایت (حتما رعایت شود): " . $brand_voice;
+		}
+
 		$user_prompt = sprintf(
 			"موضوع: %s\nکلمه‌ی کلیدی هدف: %s\nخروجی را در قالب HTML تمیز (بدون توضیح اضافه، فقط محتوای نهایی) بده.",
 			$topic,

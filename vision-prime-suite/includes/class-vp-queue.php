@@ -96,6 +96,14 @@ class VP_Queue {
 			VP_Linking::apply_to_post( $post_id, $focus_keyword );
 		}
 
+		if ( VP_Settings::get( 'pre_publish_qa' ) && class_exists( 'VP_Pre_Publish_QA' ) ) {
+			VP_Pre_Publish_QA::run_and_log( $post_id, $job->content_snapshot );
+		}
+
+		if ( class_exists( 'VP_Schema_Generator' ) ) {
+			VP_Schema_Generator::maybe_generate_and_store( $post_id, $job->content_snapshot, $job->title );
+		}
+
 		if ( $publish_now && class_exists( 'VP_Social_Manager' ) && VP_Settings::get( 'auto_social_distribution' ) ) {
 			VP_Social_Manager::distribute_on_publish( $post_id, $job );
 		}

@@ -34,6 +34,17 @@
 					<td><textarea name="competitor_prompt" rows="5" class="large-text"><?php echo esc_textarea( $settings['competitor_prompt'] ); ?></textarea></td>
 				</tr>
 				<tr>
+					<th><label>هویت/لحن برند این سایت</label></th>
+					<td>
+						<textarea name="brand_voice" rows="3" class="large-text" placeholder="مثلاً: لحن دوستانه و غیررسمی، خطاب به مخاطب جوان، از اصطلاحات تخصصی سنگین پرهیز شود..."><?php echo esc_textarea( $settings['brand_voice'] ); ?></textarea>
+						<p class="description">به پرامپت تولید محتوای این سایت (مقاله/محصول) اضافه می‌شود تا هر برند صدای خودش را حفظ کند؛ هر سایت در شبکه‌ی چندسایتی می‌تواند هویت متفاوتی داشته باشد.</p>
+					</td>
+				</tr>
+				<tr>
+					<th><label>کنترل کیفیت پیش از انتشار (QA)</label></th>
+					<td><label><input type="checkbox" name="pre_publish_qa" <?php checked( $settings['pre_publish_qa'] ); ?>> فعال</label> <p class="description">بررسی خودکار لینک‌های شکسته، تصاویر بدون alt و محتوای کم‌حجم قبل از انتشار نهایی.</p></td>
+				</tr>
+				<tr>
 					<th><label>کلید مشترک برای همه‌ی بخش‌ها</label></th>
 					<td><label><input type="checkbox" name="shared_api_mode" <?php checked( $settings['shared_api_mode'] ); ?>> فعال</label></td>
 				</tr>
