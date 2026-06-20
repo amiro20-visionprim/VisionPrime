@@ -15,13 +15,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'VP_SUITE_VERSION', '1.1.0' );
+define( 'VP_SUITE_VERSION', '1.1.1' );
 define( 'VP_SUITE_FILE', __FILE__ );
 define( 'VP_SUITE_DIR', plugin_dir_path( __FILE__ ) );
 define( 'VP_SUITE_URL', plugin_dir_url( __FILE__ ) );
 define( 'VP_SUITE_DB_VERSION', '5' );
 
 require_once VP_SUITE_DIR . 'includes/class-vp-loader.php';
+
+/**
+ * Class files must be available immediately — register_activation_hook's
+ * callback can fire in the same request that includes this file, before
+ * 'plugins_loaded' ever reaches a newly-activated plugin.
+ */
+$GLOBALS['vp_suite_loader'] = new VP_Loader();
+$GLOBALS['vp_suite_loader']->load_dependencies();
 
 register_activation_hook( __FILE__, array( 'VP_Activator', 'activate' ) );
 register_deactivation_hook( __FILE__, array( 'VP_Activator', 'deactivate' ) );
@@ -32,8 +40,4 @@ add_action( 'plugins_loaded', array( 'VP_Activator', 'maybe_upgrade' ) );
  * settings/content/logs (per-site tables), while network admins can
  * optionally push a shared API key set to all sites from Network Settings.
  */
-function vp_suite_run() {
-	$loader = new VP_Loader();
-	$loader->run();
-}
-add_action( 'plugins_loaded', 'vp_suite_run' );
+add_action( 'plugins_loaded', array( $GLOBALS['vp_suite_loader'], 'init_modules' ) );

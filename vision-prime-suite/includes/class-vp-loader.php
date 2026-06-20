@@ -15,7 +15,15 @@ class VP_Loader {
 		$this->init_modules();
 	}
 
-	private function load_dependencies() {
+	/**
+	 * Requires every class file. Must be called immediately (not deferred to
+	 * 'plugins_loaded') — WordPress fires register_activation_hook callbacks
+	 * within the same request that includes the plugin's main file, which
+	 * happens *after* 'plugins_loaded' has already fired for already-active
+	 * plugins. A newly-activated plugin's own 'plugins_loaded' callback never
+	 * runs in that request, so VP_Activator must already be loaded by then.
+	 */
+	public function load_dependencies() {
 		require_once VP_SUITE_DIR . 'includes/class-vp-activator.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-logger.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-settings.php';
@@ -48,7 +56,7 @@ class VP_Loader {
 		add_action( 'wp_initialize_site', array( 'VP_Activator', 'activate_new_site' ) );
 	}
 
-	private function init_modules() {
+	public function init_modules() {
 		new VP_Logger();
 		new VP_Settings();
 		new VP_Api_Manager();
