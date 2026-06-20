@@ -16,6 +16,12 @@
 						<button class="button button-primary vp-queue-action" data-action="approve">تایید و انتشار</button>
 						<button class="button vp-queue-action" data-action="schedule_draft">ذخیره پیش‌نویس</button>
 						<button class="button vp-queue-action" data-action="reject">رد</button>
+						<div class="vp-schedule-row">
+							<input type="datetime-local" class="vp-schedule-input">
+							<button class="button vp-queue-schedule">زمان‌بندی انتشار</button>
+						</div>
+					<?php elseif ( 'scheduled' === $job->status ) : ?>
+						<span class="vp-badge vp-badge-info">انتشار در: <?php echo esc_html( $job->scheduled_at ); ?></span>
 					<?php else : ?>
 						<em>—</em>
 					<?php endif; ?>

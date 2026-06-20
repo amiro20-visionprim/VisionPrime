@@ -60,6 +60,26 @@ class VP_Logger {
 		return $wpdb->get_results( $wpdb->prepare( $sql, $params ) );
 	}
 
+	/**
+	 * Deletes log rows older than the configured retention window. Called
+	 * from the daily cron tick so the logs table never grows unbounded on
+	 * busy commercial sites.
+	 *
+	 * @return int Rows deleted.
+	 */
+	public static function prune() {
+		global $wpdb;
+		$days = (int) VP_Settings::get( 'log_retention_days', 90 );
+		if ( $days < 1 ) {
+			return 0;
+		}
+		$cutoff = gmdate( 'Y-m-d H:i:s', current_time( 'timestamp', true ) - $days * DAY_IN_SECONDS );
+
+		return (int) $wpdb->query(
+			$wpdb->prepare( "DELETE FROM {$wpdb->prefix}vp_logs WHERE created_at < %s", $cutoff )
+		);
+	}
+
 	public function __construct() {
 		// Reserved for future hook wiring (e.g. external log shipping).
 	}

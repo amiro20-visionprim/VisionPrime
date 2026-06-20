@@ -33,6 +33,17 @@ class VP_Activator {
 
 	public static function deactivate() {
 		// Intentionally non-destructive: data, queues and logs are kept.
+		// Recurring schedules are cleared so no orphan cron events remain.
+		if ( class_exists( 'VP_Cron' ) ) {
+			VP_Cron::clear_schedules();
+		} else {
+			foreach ( array( 'vp_cron_run_queue', 'vp_cron_refresh_social_stats', 'vp_cron_operator_digest' ) as $event ) {
+				$timestamp = wp_next_scheduled( $event );
+				if ( $timestamp ) {
+					wp_unschedule_event( $timestamp, $event );
+				}
+			}
+		}
 	}
 
 	public static function create_tables() {

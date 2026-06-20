@@ -114,6 +114,63 @@ class VP_Queue {
 		);
 	}
 
+	/**
+	 * Marks a job for automatic publishing at a future time. The actual
+	 * publish is performed by VP_Cron on the scheduled WP-Cron tick.
+	 *
+	 * @param int    $job_id       Job id.
+	 * @param string $scheduled_at MySQL datetime (site timezone).
+	 */
+	public static function schedule( $job_id, $scheduled_at ) {
+		global $wpdb;
+		return $wpdb->update(
+			$wpdb->prefix . 'vp_jobs',
+			array(
+				'status'       => 'scheduled',
+				'scheduled_at' => $scheduled_at,
+				'updated_at'   => current_time( 'mysql' ),
+			),
+			array( 'id' => absint( $job_id ) ),
+			array( '%s', '%s', '%s' ),
+			array( '%d' )
+		);
+	}
+
+	/**
+	 * Publishes every scheduled job whose time has arrived. Called from
+	 * VP_Cron; safe to run repeatedly (only picks 'scheduled' rows that
+	 * are due, and each becomes 'published' on success).
+	 *
+	 * @return int Number of jobs published.
+	 */
+	public static function run_due_scheduled() {
+		global $wpdb;
+		$now = current_time( 'mysql' );
+
+		$due = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT id FROM {$wpdb->prefix}vp_jobs WHERE status = 'scheduled' AND scheduled_at IS NOT NULL AND scheduled_at <= %s ORDER BY scheduled_at ASC LIMIT 20",
+				$now
+			)
+		);
+
+		$count = 0;
+		foreach ( $due as $job_id ) {
+			$result = self::approve_and_publish( (int) $job_id, true );
+			if ( ! is_wp_error( $result ) ) {
+				$count++;
+			} else {
+				VP_Logger::log( 'queue', "انتشار زمان‌بندی‌شده‌ی #$job_id ناموفق: " . $result->get_error_message(), 'error' );
+			}
+		}
+
+		if ( $count > 0 ) {
+			VP_Logger::log( 'queue', "$count آیتم زمان‌بندی‌شده به‌صورت خودکار منتشر شد.", 'info' );
+		}
+
+		return $count;
+	}
+
 	public function ajax_action() {
 		check_ajax_referer( 'vp_suite_nonce', 'nonce' );
 		if ( ! current_user_can( 'publish_posts' ) ) {
@@ -129,6 +186,13 @@ class VP_Queue {
 				break;
 			case 'schedule_draft':
 				$result = self::approve_and_publish( $job_id, false );
+				break;
+			case 'schedule':
+				$when = sanitize_text_field( $_POST['scheduled_at'] ?? '' );
+				if ( empty( $when ) ) {
+					wp_send_json_error( array( 'message' => __( 'زمان انتشار را وارد کنید.', 'vp-suite' ) ) );
+				}
+				$result = self::schedule( $job_id, str_replace( 'T', ' ', $when ) . ':00' );
 				break;
 			case 'reject':
 				$result = self::update_status( $job_id, 'rejected' );

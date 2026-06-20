@@ -127,6 +127,34 @@
 			});
 		});
 
+		// --- Reports: send on demand ---
+		$('#vp-report-form').on('submit', function (e) {
+			e.preventDefault();
+			var $result = $('#vp-report-result');
+			$result.html('<p>در حال ارسال گزارش...</p>');
+			postAjax('vp_send_report', { hours: $(this).find('[name=hours]').val() }).done(function (res) {
+				$result.html('<p class="' + (res.success ? '' : 'vp-error') + '">' +
+					(res.success ? res.data.message : res.data.message) + '</p>');
+			}).fail(function () {
+				$result.html('<p class="vp-error">خطای ارتباط با سرور.</p>');
+			});
+		});
+
+		// --- Queue: schedule a timed publish ---
+		$(document).on('click', '.vp-queue-schedule', function () {
+			var $row = $(this).closest('tr');
+			var when = $row.find('.vp-schedule-input').val();
+			if (!when) { alert('ابتدا زمان انتشار را انتخاب کنید.'); return; }
+			postAjax('vp_queue_action', {
+				job_id: $row.data('job-id'),
+				queue_action: 'schedule',
+				scheduled_at: when
+			}).done(function (res) {
+				if (res.success) location.reload();
+				else alert(res.data.message);
+			});
+		});
+
 		// --- Social: send test message ---
 		$(document).on('submit', '.vp-social-send-form', function (e) {
 			e.preventDefault();

@@ -25,6 +25,7 @@ class VP_Admin {
 		add_submenu_page( 'vp-suite', 'تحلیل رقبا', 'تحلیل رقبا', 'edit_posts', 'vp-suite-competitor', array( $this, 'render_competitor' ) );
 		add_submenu_page( 'vp-suite', 'ریویو محتوای موجود', 'ریویو محتوا', 'edit_posts', 'vp-suite-review', array( $this, 'render_review' ) );
 		add_submenu_page( 'vp-suite', 'شبکه‌های اجتماعی', 'شبکه‌های اجتماعی', $cap, 'vp-suite-social', array( $this, 'render_social' ) );
+		add_submenu_page( 'vp-suite', 'گزارش عملکرد', 'گزارش عملکرد', $cap, 'vp-suite-reports', array( $this, 'render_reports' ) );
 		add_submenu_page( 'vp-suite', 'گزارش‌ها و لاگ', 'گزارش‌ها و لاگ', $cap, 'vp-suite-logs', array( $this, 'render_logs' ) );
 		add_submenu_page( 'vp-suite', 'کاتالوگ و راهنما', 'کاتالوگ و راهنما', 'read', 'vp-suite-catalog', array( $this, 'render_catalog' ) );
 		add_submenu_page( 'vp-suite', 'تنظیمات', 'تنظیمات', $cap, 'vp-suite-settings', array( $this, 'render_settings' ) );
@@ -85,6 +86,16 @@ class VP_Admin {
 		$this->view( 'social', array( 'channels' => VP_Social_Manager::get_channels(), 'accounts' => $accounts ) );
 	}
 
+	public function render_reports() {
+		$this->view(
+			'reports',
+			array(
+				'stats'    => VP_Reports::build( 24 ),
+				'settings' => VP_Settings::all(),
+			)
+		);
+	}
+
 	public function render_logs() {
 		$this->view( 'logs', array( 'logs' => VP_Logger::query( array( 'limit' => 100 ) ) ) );
 	}
@@ -120,6 +131,12 @@ class VP_Admin {
 			if ( isset( $_POST[ $field ] ) ) {
 				VP_Settings::update( $field, wp_kses_post( wp_unslash( $_POST[ $field ] ) ) );
 			}
+		}
+		if ( isset( $_POST['report_recipients'] ) ) {
+			VP_Settings::update( 'report_recipients', sanitize_text_field( wp_unslash( $_POST['report_recipients'] ) ) );
+		}
+		if ( isset( $_POST['log_retention_days'] ) ) {
+			VP_Settings::update( 'log_retention_days', absint( $_POST['log_retention_days'] ) );
 		}
 		VP_Settings::update( 'shared_api_mode', ! empty( $_POST['shared_api_mode'] ) );
 		VP_Settings::update( 'rankmath_sync', ! empty( $_POST['rankmath_sync'] ) );

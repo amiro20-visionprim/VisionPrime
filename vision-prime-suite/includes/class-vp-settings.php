@@ -31,6 +31,8 @@ class VP_Settings {
 			'competitor_prompt' => VP_Competitor_Analysis::default_prompt(),
 			'rankmath_sync'     => true,
 			'image_generation'  => true,
+			'report_recipients' => get_option( 'admin_email' ),
+			'log_retention_days' => 90,
 		);
 
 		return wp_parse_args( get_option( self::OPTION, array() ), $defaults );

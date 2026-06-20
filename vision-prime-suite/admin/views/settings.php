@@ -45,6 +45,14 @@
 					<th><label>تولید تصویر یونیک</label></th>
 					<td><label><input type="checkbox" name="image_generation" <?php checked( $settings['image_generation'] ); ?>> فعال</label></td>
 				</tr>
+				<tr>
+					<th><label>گیرندگان گزارش (ایمیل، با کاما جدا کنید)</label></th>
+					<td><input type="text" name="report_recipients" class="large-text" value="<?php echo esc_attr( $settings['report_recipients'] ); ?>"></td>
+				</tr>
+				<tr>
+					<th><label>نگهداری لاگ (روز)</label></th>
+					<td><input type="number" name="log_retention_days" value="<?php echo esc_attr( $settings['log_retention_days'] ); ?>" min="1" max="3650"></td>
+				</tr>
 			</table>
 			<p><button class="button button-primary" type="submit">ذخیره تنظیمات</button></p>
 		</form>
