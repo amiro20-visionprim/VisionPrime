@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'VP_SUITE_VERSION', '1.0.0' );
+define( 'VP_SUITE_VERSION', '1.1.0' );
 define( 'VP_SUITE_FILE', __FILE__ );
 define( 'VP_SUITE_DIR', plugin_dir_path( __FILE__ ) );
 define( 'VP_SUITE_URL', plugin_dir_url( __FILE__ ) );

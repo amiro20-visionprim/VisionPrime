@@ -282,6 +282,26 @@
 			}).always(function () { $btn.prop('disabled', false); });
 		});
 
+		// --- Anomaly alerts: manual check ---
+		$('#vp-anomaly-check-btn').on('click', function () {
+			var $btn = $(this).prop('disabled', true);
+			var $result = $('#vp-anomaly-result');
+			$result.html('<p>در حال بررسی...</p>');
+
+			postAjax('vp_anomaly_check', {}).done(function (res) {
+				if (!res.success) { $result.html('<p class="vp-error">' + res.data.message + '</p>'); return; }
+				if (!res.data.length) { $result.html('<p>ناهنجاری‌ای یافت نشد. ✅</p>'); return; }
+				var html = '<ul>';
+				res.data.forEach(function (a) {
+					html += '<li class="vp-error">' + a.message + '</li>';
+				});
+				html += '</ul><p>ایمیل هشدار ارسال شد.</p>';
+				$result.html(html);
+			}).fail(function () {
+				$result.html('<p class="vp-error">خطای ارتباط با سرور.</p>');
+			}).always(function () { $btn.prop('disabled', false); });
+		});
+
 		// --- Title A/B testing on real GSC CTR ---
 		$('#vp-title-ab-btn').on('click', function () {
 			var postId = $('#vp-title-ab-post').val();
