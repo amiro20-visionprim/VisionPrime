@@ -23,15 +23,18 @@ class VP_Social_Manager {
 		require_once VP_SUITE_DIR . 'includes/social/channels/class-vp-channel-telegram.php';
 		require_once VP_SUITE_DIR . 'includes/social/channels/class-vp-channel-email.php';
 		require_once VP_SUITE_DIR . 'includes/social/channels/class-vp-channel-generic-webhook.php';
+		require_once VP_SUITE_DIR . 'includes/social/channels/class-vp-channel-instagram.php';
 
 		self::$channels = array(
-			'telegram' => new VP_Channel_Telegram(),
-			'email'    => new VP_Channel_Email(),
-			// Instagram / WhatsApp / Bale / Rubika / eitaa / iGap each
-			// require platform-specific business APIs; wired through the
-			// same webhook-style adapter until each holding provides its
-			// own credentials, so the UI/queue/stats are ready on day one.
-			'instagram' => new VP_Channel_Generic_Webhook( 'instagram', 'اینستاگرام' ),
+			'telegram'  => new VP_Channel_Telegram(),
+			'email'     => new VP_Channel_Email(),
+			// Real Meta Graph API publishing (Business/Creator account +
+			// linked Facebook Page + Meta App permissions required).
+			'instagram' => new VP_Channel_Instagram(),
+			// WhatsApp / Bale / Rubika / eitaa / iGap each require
+			// platform-specific business APIs; wired through the same
+			// webhook-style adapter until each holding provides its own
+			// credentials, so the UI/queue/stats are ready on day one.
 			'whatsapp'  => new VP_Channel_Generic_Webhook( 'whatsapp', 'واتس‌اپ' ),
 			'bale'      => new VP_Channel_Generic_Webhook( 'bale', 'بله' ),
 			'rubika'    => new VP_Channel_Generic_Webhook( 'rubika', 'روبیکا' ),
