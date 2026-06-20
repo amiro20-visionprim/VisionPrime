@@ -167,6 +167,30 @@
 			});
 		});
 
+		// --- Content calendar ---
+		$('#vp-calendar-form').on('submit', function (e) {
+			e.preventDefault();
+			var $form = $(this);
+			postAjax('vp_calendar_add', {
+				job_type: $form.find('[name=job_type]').val(),
+				topic: $form.find('[name=topic]').val(),
+				keyword: $form.find('[name=keyword]').val(),
+				provider: $form.find('[name=provider]').val(),
+				scheduled_at: $form.find('[name=scheduled_at]').val(),
+				auto_publish: $form.find('[name=auto_publish]').is(':checked') ? 1 : 0
+			}).done(function (res) {
+				if (res.success) location.reload();
+				else alert(res.data.message);
+			});
+		});
+
+		$(document).on('click', '.vp-calendar-delete', function () {
+			var $row = $(this).closest('tr');
+			postAjax('vp_calendar_delete', { id: $row.data('entry-id') }).done(function (res) {
+				if (res.success) $row.remove();
+			});
+		});
+
 		// --- Google Search Console: real-data opportunity hunting ---
 		function gscEsc(s) {
 			return $('<div>').text(s == null ? '' : String(s)).html();

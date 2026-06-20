@@ -46,6 +46,18 @@
 					<td><label><input type="checkbox" name="image_generation" <?php checked( $settings['image_generation'] ); ?>> فعال</label></td>
 				</tr>
 				<tr>
+					<th><label>لینک‌سازی داخلی خودکار</label></th>
+					<td><label><input type="checkbox" name="auto_internal_linking" <?php checked( $settings['auto_internal_linking'] ); ?>> فعال</label> <p class="description">با انتشار هر محتوا، لینک به مطالب مرتبط واقعی همین سایت اضافه می‌شود.</p></td>
+				</tr>
+				<tr>
+					<th><label>لینک‌سازی بین‌برندی خودکار</label></th>
+					<td><label><input type="checkbox" name="auto_external_linking" <?php checked( $settings['auto_external_linking'] ); ?>> فعال</label> <p class="description">لینک به مطالب مرتبط در سایر سایت‌های هلدینگ (شبکه‌ی چندسایتی) اضافه می‌شود.</p></td>
+				</tr>
+				<tr>
+					<th><label>توزیع خودکار سوشال هنگام انتشار</label></th>
+					<td><label><input type="checkbox" name="auto_social_distribution" <?php checked( $settings['auto_social_distribution'] ); ?>> فعال</label> <p class="description">هر محتوای منتشرشده به‌صورت خودکار به همه‌ی حساب‌های فعال شبکه‌های اجتماعی ارسال می‌شود.</p></td>
+				</tr>
+				<tr>
 					<th><label>گیرندگان گزارش (ایمیل، با کاما جدا کنید)</label></th>
 					<td><input type="text" name="report_recipients" class="large-text" value="<?php echo esc_attr( $settings['report_recipients'] ); ?>"></td>
 				</tr>

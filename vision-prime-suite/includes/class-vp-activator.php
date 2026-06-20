@@ -59,7 +59,7 @@ class VP_Activator {
 		if ( class_exists( 'VP_Cron' ) ) {
 			VP_Cron::clear_schedules();
 		} else {
-			foreach ( array( 'vp_cron_run_queue', 'vp_cron_refresh_social_stats', 'vp_cron_operator_digest' ) as $event ) {
+			foreach ( array( 'vp_cron_run_queue', 'vp_cron_refresh_social_stats', 'vp_cron_operator_digest', 'vp_cron_run_calendar' ) as $event ) {
 				$timestamp = wp_next_scheduled( $event );
 				if ( $timestamp ) {
 					wp_unschedule_event( $timestamp, $event );
@@ -168,6 +168,23 @@ class VP_Activator {
 			PRIMARY KEY  (id),
 			KEY account_id (account_id),
 			KEY status (status)
+		) $charset_collate;";
+
+		$sql[] = "CREATE TABLE {$prefix}vp_calendar_entries (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			job_type VARCHAR(40) NOT NULL DEFAULT 'article',
+			topic VARCHAR(255) NOT NULL,
+			keyword VARCHAR(255) NULL,
+			provider VARCHAR(60) NULL,
+			model VARCHAR(120) NULL,
+			scheduled_at DATETIME NOT NULL,
+			auto_publish TINYINT(1) NOT NULL DEFAULT 0,
+			status VARCHAR(30) NOT NULL DEFAULT 'pending',
+			job_id BIGINT UNSIGNED NULL,
+			created_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY status (status),
+			KEY scheduled_at (scheduled_at)
 		) $charset_collate;";
 
 		foreach ( $sql as $statement ) {

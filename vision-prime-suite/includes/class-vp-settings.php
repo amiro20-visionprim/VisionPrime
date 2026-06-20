@@ -35,6 +35,9 @@ class VP_Settings {
 			'log_retention_days' => 90,
 			'gsc_client_id'     => '',
 			'gsc_client_secret' => '',
+			'auto_internal_linking'    => true,
+			'auto_external_linking'    => true,
+			'auto_social_distribution' => false,
 		);
 
 		return wp_parse_args( get_option( self::OPTION, array() ), $defaults );

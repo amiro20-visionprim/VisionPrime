@@ -22,6 +22,7 @@ class VP_Admin {
 		add_submenu_page( 'vp-suite', 'داشبورد', 'داشبورد', $cap, 'vp-suite', array( $this, 'render_dashboard' ) );
 		add_submenu_page( 'vp-suite', 'تولید محتوا', 'تولید محتوا', 'edit_posts', 'vp-suite-generate', array( $this, 'render_generate' ) );
 		add_submenu_page( 'vp-suite', 'صف انتشار', 'صف انتشار', 'edit_posts', 'vp-suite-queue', array( $this, 'render_queue' ) );
+		add_submenu_page( 'vp-suite', 'تقویم محتوایی', 'تقویم محتوایی', 'edit_posts', 'vp-suite-calendar', array( $this, 'render_calendar' ) );
 		add_submenu_page( 'vp-suite', 'تحلیل رقبا', 'تحلیل رقبا', 'edit_posts', 'vp-suite-competitor', array( $this, 'render_competitor' ) );
 		add_submenu_page( 'vp-suite', 'سرچ کنسول (شکار پوزیشن)', 'سرچ کنسول', $cap, 'vp-suite-search-console', array( $this, 'render_search_console' ) );
 		add_submenu_page( 'vp-suite', 'ریویو محتوای موجود', 'ریویو محتوا', 'edit_posts', 'vp-suite-review', array( $this, 'render_review' ) );
@@ -71,6 +72,16 @@ class VP_Admin {
 
 	public function render_queue() {
 		$this->view( 'queue', array( 'jobs' => VP_Queue::get_jobs() ) );
+	}
+
+	public function render_calendar() {
+		$this->view(
+			'calendar',
+			array(
+				'entries'  => VP_Content_Calendar::get_entries(),
+				'providers' => VP_AI_Providers::get_providers(),
+			)
+		);
 	}
 
 	public function render_competitor() {
@@ -168,6 +179,9 @@ class VP_Admin {
 		VP_Settings::update( 'shared_api_mode', ! empty( $_POST['shared_api_mode'] ) );
 		VP_Settings::update( 'rankmath_sync', ! empty( $_POST['rankmath_sync'] ) );
 		VP_Settings::update( 'image_generation', ! empty( $_POST['image_generation'] ) );
+		VP_Settings::update( 'auto_internal_linking', ! empty( $_POST['auto_internal_linking'] ) );
+		VP_Settings::update( 'auto_external_linking', ! empty( $_POST['auto_external_linking'] ) );
+		VP_Settings::update( 'auto_social_distribution', ! empty( $_POST['auto_social_distribution'] ) );
 
 		add_action( 'admin_notices', function () {
 			echo '<div class="notice notice-success"><p>تنظیمات ذخیره شد.</p></div>';

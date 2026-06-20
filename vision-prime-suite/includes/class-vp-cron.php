@@ -11,9 +11,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class VP_Cron {
 
-	const EVENT_QUEUE   = 'vp_cron_run_queue';
-	const EVENT_SOCIAL  = 'vp_cron_refresh_social_stats';
-	const EVENT_DIGEST  = 'vp_cron_operator_digest';
+	const EVENT_QUEUE    = 'vp_cron_run_queue';
+	const EVENT_SOCIAL   = 'vp_cron_refresh_social_stats';
+	const EVENT_DIGEST   = 'vp_cron_operator_digest';
+	const EVENT_CALENDAR = 'vp_cron_run_calendar';
 
 	public function __construct() {
 		add_filter( 'cron_schedules', array( __CLASS__, 'add_intervals' ) );
@@ -21,6 +22,7 @@ class VP_Cron {
 		add_action( self::EVENT_QUEUE, array( $this, 'run_queue' ) );
 		add_action( self::EVENT_SOCIAL, array( $this, 'refresh_social_stats' ) );
 		add_action( self::EVENT_DIGEST, array( $this, 'send_digest' ) );
+		add_action( self::EVENT_CALENDAR, array( $this, 'run_calendar' ) );
 	}
 
 	/**
@@ -38,10 +40,13 @@ class VP_Cron {
 		if ( ! wp_next_scheduled( self::EVENT_DIGEST ) ) {
 			wp_schedule_event( $this->next_digest_time(), 'daily', self::EVENT_DIGEST );
 		}
+		if ( ! wp_next_scheduled( self::EVENT_CALENDAR ) ) {
+			wp_schedule_event( time() + 120, 'hourly', self::EVENT_CALENDAR );
+		}
 	}
 
 	public static function clear_schedules() {
-		foreach ( array( self::EVENT_QUEUE, self::EVENT_SOCIAL, self::EVENT_DIGEST ) as $event ) {
+		foreach ( array( self::EVENT_QUEUE, self::EVENT_SOCIAL, self::EVENT_DIGEST, self::EVENT_CALENDAR ) as $event ) {
 			$timestamp = wp_next_scheduled( $event );
 			if ( $timestamp ) {
 				wp_unschedule_event( $timestamp, $event );
@@ -93,6 +98,12 @@ class VP_Cron {
 		}
 
 		VP_Logger::log( 'cron', 'آمار شبکه‌های اجتماعی به‌روزرسانی شد.', 'debug' );
+	}
+
+	public function run_calendar() {
+		if ( class_exists( 'VP_Content_Calendar' ) ) {
+			VP_Content_Calendar::process_due();
+		}
 	}
 
 	public function send_digest() {

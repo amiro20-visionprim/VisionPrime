@@ -30,6 +30,8 @@ class VP_Loader {
 		require_once VP_SUITE_DIR . 'includes/class-vp-competitor-analysis.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-search-console.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-review-assistant.php';
+		require_once VP_SUITE_DIR . 'includes/class-vp-linking.php';
+		require_once VP_SUITE_DIR . 'includes/class-vp-content-calendar.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-catalog.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-reports.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-cron.php';
@@ -53,6 +55,8 @@ class VP_Loader {
 		new VP_Competitor_Analysis();
 		new VP_Search_Console();
 		new VP_Review_Assistant();
+		new VP_Linking();
+		new VP_Content_Calendar();
 		new VP_Catalog();
 		new VP_Reports();
 		new VP_Social_Manager();

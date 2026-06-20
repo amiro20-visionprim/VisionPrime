@@ -102,6 +102,53 @@ class VP_Social_Manager {
 		return $stats;
 	}
 
+	/**
+	 * Auto-distributes a freshly published post to every active social
+	 * account, so an operator doesn't have to manually copy/paste the link
+	 * into each channel. Triggered from VP_Queue::approve_and_publish()
+	 * when the 'auto_social_distribution' setting is enabled.
+	 *
+	 * @param int    $post_id Newly published post.
+	 * @param object $job     The originating vp_jobs row (for the title).
+	 */
+	public static function distribute_on_publish( $post_id, $job ) {
+		global $wpdb;
+		$accounts = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}vp_social_accounts WHERE is_active = 1" );
+		if ( ! $accounts ) {
+			return;
+		}
+
+		$message = $job->title . "\n" . get_permalink( $post_id );
+
+		foreach ( $accounts as $account ) {
+			$channel = self::get_channel( $account->channel );
+			if ( ! $channel ) {
+				continue;
+			}
+
+			$result = $channel->send( $account, $message );
+
+			$wpdb->insert(
+				$wpdb->prefix . 'vp_social_posts',
+				array(
+					'account_id' => $account->id,
+					'job_id'     => $job->id,
+					'status'     => is_wp_error( $result ) ? 'failed' : 'sent',
+					'payload'    => wp_json_encode( array( 'message' => $message ) ),
+					'response'   => wp_json_encode( is_wp_error( $result ) ? array( 'error' => $result->get_error_message() ) : $result ),
+					'sent_at'    => current_time( 'mysql' ),
+					'created_at' => current_time( 'mysql' ),
+				)
+			);
+
+			if ( is_wp_error( $result ) ) {
+				VP_Logger::log( 'social_manager', 'توزیع خودکار ناموفق در ' . $account->channel . ': ' . $result->get_error_message(), 'error' );
+			} else {
+				VP_Logger::log( 'social_manager', "توزیع خودکار پست #$post_id در کانال {$account->channel} انجام شد.", 'info' );
+			}
+		}
+	}
+
 	public function ajax_save_account() {
 		check_ajax_referer( 'vp_suite_nonce', 'nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {

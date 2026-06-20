@@ -76,15 +76,28 @@ class VP_Queue {
 			return $post_id;
 		}
 
+		$focus_keyword = $job->title;
+
 		if ( VP_Settings::get( 'rankmath_sync' ) ) {
 			$seo = VP_SEO_Engine::audit( $job->content_snapshot, $job->title );
 			if ( ! is_wp_error( $seo ) ) {
 				VP_Rankmath_Sync::apply( $post_id, $seo );
+				if ( ! empty( $seo['focus_keyword'] ) ) {
+					$focus_keyword = $seo['focus_keyword'];
+				}
 			}
 		}
 
 		if ( VP_Settings::get( 'image_generation' ) && ! has_post_thumbnail( $post_id ) ) {
 			self::attach_generated_thumbnail( $post_id, $job );
+		}
+
+		if ( class_exists( 'VP_Linking' ) ) {
+			VP_Linking::apply_to_post( $post_id, $focus_keyword );
+		}
+
+		if ( $publish_now && class_exists( 'VP_Social_Manager' ) && VP_Settings::get( 'auto_social_distribution' ) ) {
+			VP_Social_Manager::distribute_on_publish( $post_id, $job );
 		}
 
 		$wpdb->update(
