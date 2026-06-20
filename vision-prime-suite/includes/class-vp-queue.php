@@ -83,6 +83,10 @@ class VP_Queue {
 			}
 		}
 
+		if ( VP_Settings::get( 'image_generation' ) && ! has_post_thumbnail( $post_id ) ) {
+			self::attach_generated_thumbnail( $post_id, $job );
+		}
+
 		$wpdb->update(
 			$wpdb->prefix . 'vp_jobs',
 			array(
@@ -98,6 +102,40 @@ class VP_Queue {
 		VP_Logger::log( 'queue', "آیتم #$job_id منتشر شد (پست #$post_id).", 'info' );
 
 		return $post_id;
+	}
+
+	/**
+	 * Generates a unique image for the job (via VP_Image_Generator, using
+	 * the same provider/model already on record for the job) and sideloads
+	 * it into the media library as the post's featured image. Failures are
+	 * logged but never block publishing — the image is a nice-to-have.
+	 *
+	 * @param int    $post_id Newly created post id.
+	 * @param object $job     Job row from wp_vp_jobs.
+	 */
+	private static function attach_generated_thumbnail( $post_id, $job ) {
+		require_once ABSPATH . 'wp-admin/includes/media.php';
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+
+		$provider = $job->provider ?: 'openrouter';
+		$model    = $job->model ?: '';
+		$prompt   = sprintf( 'A unique, high quality featured image for an article titled "%s".', $job->title );
+
+		$image = VP_Image_Generator::generate( $prompt, $provider, $model );
+		if ( is_wp_error( $image ) ) {
+			VP_Logger::log( 'queue', "تولید خودکار تصویر شاخص برای پست #$post_id ناموفق: " . $image->get_error_message(), 'error' );
+			return;
+		}
+
+		$attachment_id = media_sideload_image( $image['url'], $post_id, $job->title, 'id' );
+		if ( is_wp_error( $attachment_id ) ) {
+			VP_Logger::log( 'queue', 'ضمیمه‌سازی تصویر شاخص ناموفق: ' . $attachment_id->get_error_message(), 'error' );
+			return;
+		}
+
+		set_post_thumbnail( $post_id, $attachment_id );
+		VP_Logger::log( 'queue', "تصویر شاخص خودکار برای پست #$post_id تنظیم شد.", 'info' );
 	}
 
 	public static function update_status( $job_id, $status ) {

@@ -33,6 +33,7 @@ class VP_Loader {
 		require_once VP_SUITE_DIR . 'includes/class-vp-reports.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-cron.php';
 		require_once VP_SUITE_DIR . 'includes/social/class-vp-social-manager.php';
+		require_once VP_SUITE_DIR . 'includes/class-vp-network-admin.php';
 		require_once VP_SUITE_DIR . 'admin/class-vp-admin.php';
 
 		add_action( 'wp_initialize_site', array( 'VP_Activator', 'activate_new_site' ) );
@@ -54,6 +55,7 @@ class VP_Loader {
 		new VP_Reports();
 		new VP_Social_Manager();
 		new VP_Cron();
+		new VP_Network_Admin();
 		new VP_Admin();
 	}
 }

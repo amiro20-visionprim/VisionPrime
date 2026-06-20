@@ -3,7 +3,7 @@
  * Plugin Name: VisionPrime Suite
  * Plugin URI: https://visionprime.example
  * Description: اکوسیستم یکپارچه‌ی تولید محتوا، سئو، تحلیل رقبا و توزیع چندکاناله برای هلدینگ ویژن پرایم. پشتیبانی از ۱۵+ مدل هوش مصنوعی (از طریق OpenRouter و سرویس‌های مستقیم)، سینک کامل با Rank Math، صف انتشار پیشرفته و ماژول‌های شبکه‌های اجتماعی.
- * Version: 0.3.0
+ * Version: 0.4.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Network: true
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'VP_SUITE_VERSION', '0.3.0' );
+define( 'VP_SUITE_VERSION', '0.4.0' );
 define( 'VP_SUITE_FILE', __FILE__ );
 define( 'VP_SUITE_DIR', plugin_dir_path( __FILE__ ) );
 define( 'VP_SUITE_URL', plugin_dir_url( __FILE__ ) );
