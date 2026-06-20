@@ -191,6 +191,52 @@
 			});
 		});
 
+		// --- Keyword cannibalization detection ---
+		$('#vp-cannibal-scan').on('click', function () {
+			var $btn = $(this).prop('disabled', true);
+			var $result = $('#vp-cannibal-result');
+			$result.html('<p>در حال بررسی...</p>');
+
+			postAjax('vp_cannibalization_scan', { days: $('#vp-cannibal-days').val() }).done(function (res) {
+				if (!res.success) { $result.html('<p class="vp-error">' + res.data.message + '</p>'); return; }
+				var html = '';
+
+				html += '<div class="vp-card"><h2>کانیبالیزیشن داخلی (همین سایت)</h2>';
+				if (res.data.within_site && res.data.within_site.message) {
+					html += '<p class="vp-error">' + res.data.within_site.message + '</p>';
+				} else if (!res.data.within_site || !res.data.within_site.length) {
+					html += '<p>موردی یافت نشد.</p>';
+				} else {
+					res.data.within_site.forEach(function (item) {
+						html += '<h4>«' + item.query + '» — ' + item.pages.length + ' صفحه‌ی رقیب</h4><table class="widefat striped"><thead><tr><th>صفحه</th><th>پوزیشن</th><th>ایمپرشن</th><th>کلیک</th></tr></thead><tbody>';
+						item.pages.forEach(function (p) {
+							html += '<tr><td>' + p.page + '</td><td>' + p.position + '</td><td>' + p.impressions + '</td><td>' + p.clicks + '</td></tr>';
+						});
+						html += '</tbody></table>';
+					});
+				}
+				html += '</div>';
+
+				html += '<div class="vp-card"><h2>کانیبالیزیشن بین‌برندی (شبکه‌ی هلدینگ)</h2>';
+				if (!res.data.cross_site || !res.data.cross_site.length) {
+					html += '<p>موردی یافت نشد.</p>';
+				} else {
+					res.data.cross_site.forEach(function (item) {
+						html += '<h4>«' + item.keyword + '» — ' + item.entries.length + ' سایت</h4><table class="widefat striped"><thead><tr><th>سایت</th><th>عنوان</th></tr></thead><tbody>';
+						item.entries.forEach(function (e) {
+							html += '<tr><td>' + e.site_name + '</td><td><a href="' + e.url + '" target="_blank">' + e.title + '</a></td></tr>';
+						});
+						html += '</tbody></table>';
+					});
+				}
+				html += '</div>';
+
+				$result.html(html);
+			}).fail(function () {
+				$result.html('<p class="vp-error">خطای ارتباط با سرور.</p>');
+			}).always(function () { $btn.prop('disabled', false); });
+		});
+
 		// --- Google Search Console: real-data opportunity hunting ---
 		function gscEsc(s) {
 			return $('<div>').text(s == null ? '' : String(s)).html();
