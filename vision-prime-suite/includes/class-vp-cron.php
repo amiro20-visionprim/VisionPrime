@@ -15,6 +15,7 @@ class VP_Cron {
 	const EVENT_SOCIAL   = 'vp_cron_refresh_social_stats';
 	const EVENT_DIGEST   = 'vp_cron_operator_digest';
 	const EVENT_CALENDAR = 'vp_cron_run_calendar';
+	const EVENT_RANK_SNAPSHOT = 'vp_cron_rank_snapshot';
 
 	public function __construct() {
 		add_filter( 'cron_schedules', array( __CLASS__, 'add_intervals' ) );
@@ -23,6 +24,7 @@ class VP_Cron {
 		add_action( self::EVENT_SOCIAL, array( $this, 'refresh_social_stats' ) );
 		add_action( self::EVENT_DIGEST, array( $this, 'send_digest' ) );
 		add_action( self::EVENT_CALENDAR, array( $this, 'run_calendar' ) );
+		add_action( self::EVENT_RANK_SNAPSHOT, array( $this, 'run_rank_snapshot' ) );
 	}
 
 	/**
@@ -43,10 +45,13 @@ class VP_Cron {
 		if ( ! wp_next_scheduled( self::EVENT_CALENDAR ) ) {
 			wp_schedule_event( time() + 120, 'hourly', self::EVENT_CALENDAR );
 		}
+		if ( ! wp_next_scheduled( self::EVENT_RANK_SNAPSHOT ) ) {
+			wp_schedule_event( time() + 180, 'daily', self::EVENT_RANK_SNAPSHOT );
+		}
 	}
 
 	public static function clear_schedules() {
-		foreach ( array( self::EVENT_QUEUE, self::EVENT_SOCIAL, self::EVENT_DIGEST, self::EVENT_CALENDAR ) as $event ) {
+		foreach ( array( self::EVENT_QUEUE, self::EVENT_SOCIAL, self::EVENT_DIGEST, self::EVENT_CALENDAR, self::EVENT_RANK_SNAPSHOT ) as $event ) {
 			$timestamp = wp_next_scheduled( $event );
 			if ( $timestamp ) {
 				wp_unschedule_event( $timestamp, $event );
@@ -103,6 +108,12 @@ class VP_Cron {
 	public function run_calendar() {
 		if ( class_exists( 'VP_Content_Calendar' ) ) {
 			VP_Content_Calendar::process_due();
+		}
+	}
+
+	public function run_rank_snapshot() {
+		if ( class_exists( 'VP_Rank_Tracker' ) ) {
+			VP_Rank_Tracker::snapshot_now();
 		}
 	}
 

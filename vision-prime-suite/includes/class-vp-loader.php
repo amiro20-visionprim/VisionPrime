@@ -37,6 +37,7 @@ class VP_Loader {
 		require_once VP_SUITE_DIR . 'includes/class-vp-schema-generator.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-catalog.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-reports.php';
+		require_once VP_SUITE_DIR . 'includes/class-vp-rank-tracker.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-cron.php';
 		require_once VP_SUITE_DIR . 'includes/social/class-vp-social-manager.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-network-admin.php';
@@ -64,6 +65,7 @@ class VP_Loader {
 		new VP_Schema_Generator();
 		new VP_Catalog();
 		new VP_Reports();
+		new VP_Rank_Tracker();
 		new VP_Social_Manager();
 		new VP_Cron();
 		new VP_Network_Admin();

@@ -237,6 +237,51 @@
 			}).always(function () { $btn.prop('disabled', false); });
 		});
 
+		// --- Rank history + content decay detection ---
+		$('#vp-rank-history-btn').on('click', function () {
+			var $btn = $(this).prop('disabled', true);
+			var $result = $('#vp-rank-history-result');
+			$result.html('<p>در حال بارگذاری...</p>');
+
+			postAjax('vp_rank_history', {
+				query: $('#vp-rank-query').val(),
+				page: $('#vp-rank-page').val()
+			}).done(function (res) {
+				if (!res.success) { $result.html('<p class="vp-error">' + res.data.message + '</p>'); return; }
+				if (!res.data.length) { $result.html('<p>داده‌ای یافت نشد.</p>'); return; }
+				var html = '<table class="widefat striped"><thead><tr><th>تاریخ</th><th>کوئری</th><th>صفحه</th><th>پوزیشن</th><th>ایمپرشن</th><th>کلیک</th><th>CTR</th></tr></thead><tbody>';
+				res.data.forEach(function (r) {
+					html += '<tr><td>' + r.snapshot_date + '</td><td>' + r.query + '</td><td>' + r.page + '</td><td>' + r.position + '</td><td>' + r.impressions + '</td><td>' + r.clicks + '</td><td>' + r.ctr + '%</td></tr>';
+				});
+				html += '</tbody></table>';
+				$result.html(html);
+			}).fail(function () {
+				$result.html('<p class="vp-error">خطای ارتباط با سرور.</p>');
+			}).always(function () { $btn.prop('disabled', false); });
+		});
+
+		$('#vp-decay-scan-btn').on('click', function () {
+			var $btn = $(this).prop('disabled', true);
+			var $result = $('#vp-decay-result');
+			$result.html('<p>در حال بررسی...</p>');
+
+			postAjax('vp_rank_decay', {
+				window_days: $('#vp-decay-window').val(),
+				decline_ratio: $('#vp-decay-ratio').val()
+			}).done(function (res) {
+				if (!res.success) { $result.html('<p class="vp-error">' + res.data.message + '</p>'); return; }
+				if (!res.data.length) { $result.html('<p>هیچ صفحه‌ای افت قابل‌توجهی نداشته.</p>'); return; }
+				var html = '<table class="widefat striped"><thead><tr><th>صفحه</th><th>کلیک قبلی</th><th>کلیک اخیر</th><th>درصد افت</th></tr></thead><tbody>';
+				res.data.forEach(function (r) {
+					html += '<tr><td>' + r.page + '</td><td>' + r.prior_clicks + '</td><td>' + r.recent_clicks + '</td><td>' + r.drop_percent + '%</td></tr>';
+				});
+				html += '</tbody></table>';
+				$result.html(html);
+			}).fail(function () {
+				$result.html('<p class="vp-error">خطای ارتباط با سرور.</p>');
+			}).always(function () { $btn.prop('disabled', false); });
+		});
+
 		// --- Google Search Console: real-data opportunity hunting ---
 		function gscEsc(s) {
 			return $('<div>').text(s == null ? '' : String(s)).html();

@@ -187,6 +187,22 @@ class VP_Activator {
 			KEY scheduled_at (scheduled_at)
 		) $charset_collate;";
 
+		$sql[] = "CREATE TABLE {$prefix}vp_rank_snapshots (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			query VARCHAR(255) NOT NULL,
+			page VARCHAR(500) NOT NULL,
+			position FLOAT NOT NULL DEFAULT 0,
+			impressions BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			clicks BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			ctr FLOAT NOT NULL DEFAULT 0,
+			snapshot_date DATE NOT NULL,
+			created_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY query (query(191)),
+			KEY page (page(191)),
+			KEY snapshot_date (snapshot_date)
+		) $charset_collate;";
+
 		foreach ( $sql as $statement ) {
 			dbDelta( $statement );
 		}
