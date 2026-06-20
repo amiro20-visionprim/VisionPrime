@@ -33,6 +33,8 @@ class VP_Settings {
 			'image_generation'  => true,
 			'report_recipients' => get_option( 'admin_email' ),
 			'log_retention_days' => 90,
+			'gsc_client_id'     => '',
+			'gsc_client_secret' => '',
 		);
 
 		return wp_parse_args( get_option( self::OPTION, array() ), $defaults );

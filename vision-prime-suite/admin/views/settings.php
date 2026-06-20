@@ -53,6 +53,20 @@
 					<th><label>نگهداری لاگ (روز)</label></th>
 					<td><input type="number" name="log_retention_days" value="<?php echo esc_attr( $settings['log_retention_days'] ); ?>" min="1" max="3650"></td>
 				</tr>
+				<tr>
+					<th colspan="2"><h3 style="margin:8px 0;">Google Search Console (داده‌ی واقعی رتبه)</h3></th>
+				</tr>
+				<tr>
+					<th><label>GSC Client ID</label></th>
+					<td><input type="text" name="gsc_client_id" class="large-text" dir="ltr" value="<?php echo esc_attr( $settings['gsc_client_id'] ); ?>"></td>
+				</tr>
+				<tr>
+					<th><label>GSC Client Secret</label></th>
+					<td>
+						<input type="password" name="gsc_client_secret" class="large-text" dir="ltr" value="<?php echo esc_attr( $settings['gsc_client_secret'] ); ?>">
+						<p class="description">از <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud Console</a> یک OAuth Client بسازید و این آدرس را به‌عنوان redirect URI اضافه کنید: <code style="direction:ltr;"><?php echo esc_html( admin_url( 'admin.php?page=vp-suite-search-console' ) ); ?></code></p>
+					</td>
+				</tr>
 			</table>
 			<p><button class="button button-primary" type="submit">ذخیره تنظیمات</button></p>
 		</form>

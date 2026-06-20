@@ -28,6 +28,7 @@ class VP_Loader {
 		require_once VP_SUITE_DIR . 'includes/class-vp-rankmath-sync.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-queue.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-competitor-analysis.php';
+		require_once VP_SUITE_DIR . 'includes/class-vp-search-console.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-review-assistant.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-catalog.php';
 		require_once VP_SUITE_DIR . 'includes/class-vp-reports.php';
@@ -50,6 +51,7 @@ class VP_Loader {
 		new VP_Rankmath_Sync();
 		new VP_Queue();
 		new VP_Competitor_Analysis();
+		new VP_Search_Console();
 		new VP_Review_Assistant();
 		new VP_Catalog();
 		new VP_Reports();

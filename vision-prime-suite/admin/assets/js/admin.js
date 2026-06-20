@@ -166,5 +166,87 @@
 				alert(res.success ? 'ارسال شد.' : res.data.message);
 			});
 		});
+
+		// --- Google Search Console: real-data opportunity hunting ---
+		function gscEsc(s) {
+			return $('<div>').text(s == null ? '' : String(s)).html();
+		}
+
+		function gscRows(items, cols) {
+			if (!items || !items.length) {
+				return '<tr><td colspan="' + cols.length + '">موردی یافت نشد.</td></tr>';
+			}
+			return items.map(function (o) {
+				return '<tr>' + cols.map(function (c) {
+					return '<td>' + gscEsc(o[c]) + (c === 'ctr' || c === 'expected_ctr' ? '%' : '') + '</td>';
+				}).join('') + '</tr>';
+			}).join('');
+		}
+
+		function renderOpportunities(d) {
+			var html = '<div class="vp-card"><h2>نتیجه‌ی شکار پوزیشن (بازه‌ی ' + gscEsc(d.window_days) + ' روزه — ' + gscEsc(d.fetched) + ' کوئری بررسی شد)</h2>';
+
+			html += '<h3>🎯 فاصله‌ی نزدیک — صفحه ۲ (' + gscEsc(d.summary.striking) + ' مورد)</h3>';
+			html += '<table class="widefat striped"><thead><tr><th>کوئری</th><th>پوزیشن</th><th>ایمپرشن</th><th>کلیک</th><th>CTR</th><th>صفحه</th></tr></thead><tbody>';
+			html += gscRows(d.striking_distance, ['query', 'position', 'impressions', 'clicks', 'ctr', 'page']);
+			html += '</tbody></table>';
+
+			html += '<h3 style="margin-top:18px;">✍️ CTR پایین روی رتبه‌ی خوب (' + gscEsc(d.summary.low_ctr) + ' مورد)</h3>';
+			html += '<table class="widefat striped"><thead><tr><th>کوئری</th><th>پوزیشن</th><th>CTR فعلی</th><th>CTR مورد انتظار</th><th>ایمپرشن</th><th>صفحه</th></tr></thead><tbody>';
+			html += gscRows(d.low_ctr, ['query', 'position', 'ctr', 'expected_ctr', 'impressions', 'page']);
+			html += '</tbody></table>';
+
+			html += '<h3 style="margin-top:18px;">📄 شکاف محتوایی — رتبه دورتر از صفحه ۲ (' + gscEsc(d.summary.gap) + ' مورد)</h3>';
+			html += '<table class="widefat striped"><thead><tr><th>کوئری</th><th>پوزیشن</th><th>ایمپرشن</th><th>کلیک</th><th>CTR</th><th>صفحه</th></tr></thead><tbody>';
+			html += gscRows(d.content_gap, ['query', 'position', 'impressions', 'clicks', 'ctr', 'page']);
+			html += '</tbody></table></div>';
+
+			$('#vp-gsc-result').html(html);
+		}
+
+		$('#vp-gsc-load-sites').on('click', function () {
+			var $btn = $(this).prop('disabled', true).text('در حال بارگذاری...');
+			postAjax('vp_gsc_list_sites', {}).done(function (res) {
+				if (!res.success) { alert(res.data.message); return; }
+				var $sel = $('#vp-gsc-site').empty();
+				(res.data.sites || []).forEach(function (s) {
+					$sel.append($('<option>').val(s).text(s).prop('selected', s === res.data.current));
+				});
+				if (!res.data.sites || !res.data.sites.length) {
+					$sel.append($('<option>').val('').text('هیچ پراپرتی‌ای در این حساب یافت نشد.'));
+				}
+			}).always(function () {
+				$btn.prop('disabled', false).text('بارگذاری سایت‌ها');
+			});
+		});
+
+		$('#vp-gsc-site').on('change', function () {
+			postAjax('vp_gsc_set_site', { site_url: $(this).val() });
+		});
+
+		$('#vp-gsc-hunt').on('click', function () {
+			var $btn = $(this).prop('disabled', true);
+			$('#vp-gsc-result').html('<p>در حال دریافت داده‌ی واقعی از Search Console...</p>');
+			postAjax('vp_gsc_hunt', { days: $('#vp-gsc-days').val() }).done(function (res) {
+				if (res.success) { renderOpportunities(res.data); }
+				else { $('#vp-gsc-result').html('<p class="vp-error">' + res.data.message + '</p>'); }
+			}).fail(function () {
+				$('#vp-gsc-result').html('<p class="vp-error">خطای ارتباط با سرور.</p>');
+			}).always(function () { $btn.prop('disabled', false); });
+		});
+
+		$('#vp-gsc-strategy').on('click', function () {
+			var $btn = $(this).prop('disabled', true);
+			$('#vp-gsc-result').html('<p>در حال تحلیل داده‌ی واقعی توسط هوش مصنوعی...</p>');
+			postAjax('vp_gsc_ai_strategy', { days: $('#vp-gsc-days').val() }).done(function (res) {
+				if (res.success) {
+					$('#vp-gsc-result').html('<div class="vp-card"><h2>🧠 استراتژی مبتنی بر داده‌ی واقعی</h2><pre style="white-space:pre-wrap;">' + gscEsc(res.data.raw) + '</pre></div>');
+				} else {
+					$('#vp-gsc-result').html('<p class="vp-error">' + res.data.message + '</p>');
+				}
+			}).fail(function () {
+				$('#vp-gsc-result').html('<p class="vp-error">خطای ارتباط با سرور.</p>');
+			}).always(function () { $btn.prop('disabled', false); });
+		});
 	});
 })(jQuery);

@@ -23,6 +23,7 @@ class VP_Admin {
 		add_submenu_page( 'vp-suite', 'تولید محتوا', 'تولید محتوا', 'edit_posts', 'vp-suite-generate', array( $this, 'render_generate' ) );
 		add_submenu_page( 'vp-suite', 'صف انتشار', 'صف انتشار', 'edit_posts', 'vp-suite-queue', array( $this, 'render_queue' ) );
 		add_submenu_page( 'vp-suite', 'تحلیل رقبا', 'تحلیل رقبا', 'edit_posts', 'vp-suite-competitor', array( $this, 'render_competitor' ) );
+		add_submenu_page( 'vp-suite', 'سرچ کنسول (شکار پوزیشن)', 'سرچ کنسول', $cap, 'vp-suite-search-console', array( $this, 'render_search_console' ) );
 		add_submenu_page( 'vp-suite', 'ریویو محتوای موجود', 'ریویو محتوا', 'edit_posts', 'vp-suite-review', array( $this, 'render_review' ) );
 		add_submenu_page( 'vp-suite', 'شبکه‌های اجتماعی', 'شبکه‌های اجتماعی', $cap, 'vp-suite-social', array( $this, 'render_social' ) );
 		add_submenu_page( 'vp-suite', 'گزارش عملکرد', 'گزارش عملکرد', $cap, 'vp-suite-reports', array( $this, 'render_reports' ) );
@@ -74,6 +75,19 @@ class VP_Admin {
 
 	public function render_competitor() {
 		$this->view( 'competitor', array( 'reports' => VP_Competitor_Analysis::get_reports(), 'settings' => VP_Settings::all() ) );
+	}
+
+	public function render_search_console() {
+		$this->view(
+			'search-console',
+			array(
+				'configured'   => VP_Search_Console::is_configured(),
+				'connected'    => VP_Search_Console::is_connected(),
+				'connection'   => VP_Search_Console::get_connection(),
+				'auth_url'     => VP_Search_Console::is_configured() ? VP_Search_Console::get_auth_url() : '',
+				'redirect_uri' => VP_Search_Console::get_redirect_uri(),
+			)
+		);
 	}
 
 	public function render_review() {
@@ -144,6 +158,12 @@ class VP_Admin {
 		}
 		if ( isset( $_POST['log_retention_days'] ) ) {
 			VP_Settings::update( 'log_retention_days', absint( $_POST['log_retention_days'] ) );
+		}
+		if ( isset( $_POST['gsc_client_id'] ) ) {
+			VP_Settings::update( 'gsc_client_id', sanitize_text_field( wp_unslash( $_POST['gsc_client_id'] ) ) );
+		}
+		if ( isset( $_POST['gsc_client_secret'] ) ) {
+			VP_Settings::update( 'gsc_client_secret', sanitize_text_field( wp_unslash( $_POST['gsc_client_secret'] ) ) );
 		}
 		VP_Settings::update( 'shared_api_mode', ! empty( $_POST['shared_api_mode'] ) );
 		VP_Settings::update( 'rankmath_sync', ! empty( $_POST['rankmath_sync'] ) );
