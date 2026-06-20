@@ -54,7 +54,7 @@ class VP_Competitor_Analysis {
 			),
 		);
 
-		$raw = VP_Api_Manager::chat( $provider, $model, $messages, 'competitor' );
+		$raw = VP_Api_Manager::chat_with_fallback( 'competitor', $messages, $provider, $model );
 		if ( is_wp_error( $raw ) ) {
 			return $raw;
 		}

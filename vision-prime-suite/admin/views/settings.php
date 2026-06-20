@@ -101,26 +101,35 @@
 				</tr>
 				<tr><th><label>برچسب</label></th><td><input type="text" name="label" class="regular-text" required></td></tr>
 				<tr><th><label>کلید API</label></th><td><input type="password" name="api_key" class="regular-text" required></td></tr>
+				<tr>
+					<th><label>اولویت</label></th>
+					<td>
+						<input type="number" name="priority" class="small-text" value="100" min="1" max="999">
+						<p class="description">عدد کوچک‌تر = اولویت بالاتر. اگر کلید با اولویت بالاتر به محدودیت بخورد یا خطا بدهد، سیستم به‌صورت خودکار سراغ کلید بعدی (اولویت پایین‌تر) در همین Scope یا Scope مشترک می‌رود.</p>
+					</td>
+				</tr>
 			</table>
 			<p><button class="button button-primary" type="submit">ذخیره کلید</button></p>
 		</form>
 
 		<table class="widefat striped">
-			<thead><tr><th>برچسب</th><th>سرویس</th><th>Scope</th><th>وضعیت</th><th>تاریخ</th></tr></thead>
+			<thead><tr><th>برچسب</th><th>سرویس</th><th>Scope</th><th>اولویت</th><th>وضعیت</th><th>تاریخ</th></tr></thead>
 			<tbody>
 			<?php foreach ( $keys as $k ) : ?>
 				<tr>
 					<td><?php echo esc_html( $k->label ); ?></td>
 					<td><?php echo esc_html( $k->provider ); ?></td>
 					<td><?php echo esc_html( $k->scope ); ?></td>
+					<td><?php echo esc_html( $k->priority ); ?></td>
 					<td><?php echo $k->is_active ? '✅' : '❌'; ?></td>
 					<td><?php echo esc_html( $k->created_at ); ?></td>
 				</tr>
 			<?php endforeach; ?>
 			<?php if ( empty( $keys ) ) : ?>
-				<tr><td colspan="5">کلیدی ثبت نشده است.</td></tr>
+				<tr><td colspan="6">کلیدی ثبت نشده است.</td></tr>
 			<?php endif; ?>
 			</tbody>
 		</table>
+		<p class="description">برای هر بخش (محتوا/سئو/رقبا/تصویر) می‌توانید چند کلید با اولویت‌های متفاوت ثبت کنید تا زنجیره‌ی جایگزین خودکار شکل بگیرد.</p>
 	</div>
 </div>

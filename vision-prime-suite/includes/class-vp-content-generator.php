@@ -61,7 +61,7 @@ class VP_Content_Generator {
 			array( 'role' => 'user', 'content' => $user_prompt ),
 		);
 
-		$response = VP_Api_Manager::chat( $provider, $model, $messages, 'content' );
+		$response = VP_Api_Manager::chat_with_fallback( 'content', $messages, $provider, $model );
 
 		if ( is_wp_error( $response ) ) {
 			VP_Logger::log( 'content_generator', $response->get_error_message(), 'error', compact( 'type', 'topic' ) );

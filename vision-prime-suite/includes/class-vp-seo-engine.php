@@ -53,7 +53,7 @@ class VP_SEO_Engine {
 			),
 		);
 
-		$raw = VP_Api_Manager::chat( $provider, $model, $messages, 'seo' );
+		$raw = VP_Api_Manager::chat_with_fallback( 'seo', $messages, $provider, $model );
 		if ( is_wp_error( $raw ) ) {
 			return $raw;
 		}

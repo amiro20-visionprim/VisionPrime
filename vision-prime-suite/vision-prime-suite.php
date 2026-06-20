@@ -15,16 +15,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'VP_SUITE_VERSION', '0.5.0' );
+define( 'VP_SUITE_VERSION', '0.6.0' );
 define( 'VP_SUITE_FILE', __FILE__ );
 define( 'VP_SUITE_DIR', plugin_dir_path( __FILE__ ) );
 define( 'VP_SUITE_URL', plugin_dir_url( __FILE__ ) );
-define( 'VP_SUITE_DB_VERSION', '1' );
+define( 'VP_SUITE_DB_VERSION', '2' );
 
 require_once VP_SUITE_DIR . 'includes/class-vp-loader.php';
 
 register_activation_hook( __FILE__, array( 'VP_Activator', 'activate' ) );
 register_deactivation_hook( __FILE__, array( 'VP_Activator', 'deactivate' ) );
+add_action( 'plugins_loaded', array( 'VP_Activator', 'maybe_upgrade' ) );
 
 /**
  * Boots the plugin. Each site in a multisite network gets its own

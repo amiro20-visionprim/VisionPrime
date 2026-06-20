@@ -182,7 +182,9 @@ class VP_Admin {
 			sanitize_key( $_POST['provider'] ?? '' ),
 			sanitize_key( $_POST['scope'] ?? 'shared' ),
 			sanitize_text_field( $_POST['label'] ?? '' ),
-			sanitize_text_field( $_POST['api_key'] ?? '' )
+			sanitize_text_field( $_POST['api_key'] ?? '' ),
+			array(),
+			isset( $_POST['priority'] ) ? absint( $_POST['priority'] ) : 100
 		);
 
 		add_action( 'admin_notices', function () {

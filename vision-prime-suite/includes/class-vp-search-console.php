@@ -431,7 +431,7 @@ class VP_Search_Console {
 			array( 'role' => 'user', 'content' => $user ),
 		);
 
-		$raw = VP_Api_Manager::chat( $provider, $model, $messages, 'competitor' );
+		$raw = VP_Api_Manager::chat_with_fallback( 'competitor', $messages, $provider, $model );
 		if ( is_wp_error( $raw ) ) {
 			return $raw;
 		}

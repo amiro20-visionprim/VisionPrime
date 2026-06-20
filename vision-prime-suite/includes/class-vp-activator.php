@@ -31,6 +31,28 @@ class VP_Activator {
 		restore_current_blog();
 	}
 
+	/**
+	 * Runs on every page load (cheap option check) so existing installs
+	 * pick up new tables/columns added in later versions without requiring
+	 * a manual deactivate/reactivate.
+	 */
+	public static function maybe_upgrade() {
+		if ( get_option( 'vp_suite_db_version' ) === VP_SUITE_DB_VERSION ) {
+			return;
+		}
+
+		if ( is_multisite() ) {
+			$site_ids = get_sites( array( 'fields' => 'ids' ) );
+			foreach ( $site_ids as $site_id ) {
+				switch_to_blog( $site_id );
+				self::create_tables();
+				restore_current_blog();
+			}
+		} else {
+			self::create_tables();
+		}
+	}
+
 	public static function deactivate() {
 		// Intentionally non-destructive: data, queues and logs are kept.
 		// Recurring schedules are cleared so no orphan cron events remain.
@@ -62,12 +84,14 @@ class VP_Activator {
 			scope VARCHAR(60) NOT NULL DEFAULT 'shared',
 			api_key TEXT NOT NULL,
 			meta LONGTEXT NULL,
+			priority SMALLINT NOT NULL DEFAULT 100,
 			is_active TINYINT(1) NOT NULL DEFAULT 1,
 			created_at DATETIME NOT NULL,
 			updated_at DATETIME NOT NULL,
 			PRIMARY KEY  (id),
 			KEY provider (provider),
-			KEY scope (scope)
+			KEY scope (scope),
+			KEY priority (priority)
 		) $charset_collate;";
 
 		$sql[] = "CREATE TABLE {$prefix}vp_jobs (
