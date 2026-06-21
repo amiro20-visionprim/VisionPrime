@@ -55,7 +55,9 @@ class VP_AI_Providers {
 				'endpoint'    => 'https://api.anthropic.com/v1/messages',
 				'auth_header' => 'x-api-key',
 				'auth_prefix' => '',
-				'models'      => array( 'claude-3.7-sonnet', 'claude-3.5-haiku' ),
+				// Anthropic's "-latest" aliases always resolve to the newest
+				// snapshot of that model line, so this list never goes stale.
+				'models'      => array( 'claude-3-7-sonnet-latest', 'claude-3-5-haiku-latest' ),
 				'image_models' => array(),
 			),
 			'google'      => array(
@@ -63,7 +65,7 @@ class VP_AI_Providers {
 				'endpoint'    => 'https://generativelanguage.googleapis.com/v1beta/models',
 				'auth_header' => 'x-goog-api-key',
 				'auth_prefix' => '',
-				'models'      => array( 'gemini-2.0-pro', 'gemini-2.0-flash' ),
+				'models'      => array( 'gemini-2.0-flash', 'gemini-1.5-pro' ),
 				'image_models' => array( 'imagen-3' ),
 			),
 			'stability'   => array(

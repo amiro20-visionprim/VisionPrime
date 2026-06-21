@@ -17,6 +17,10 @@ class VP_Content_Generator {
 		add_action( 'wp_ajax_vp_generate_content', array( $this, 'ajax_generate' ) );
 		add_action( 'wp_ajax_vp_bulk_enqueue', array( $this, 'ajax_bulk_enqueue' ) );
 		add_action( 'wp_ajax_vp_bulk_status', array( $this, 'ajax_bulk_status' ) );
+		add_action( 'wp_ajax_vp_bulk_list', array( $this, 'ajax_bulk_list' ) );
+		add_action( 'wp_ajax_vp_bulk_process_now', array( $this, 'ajax_bulk_process_now' ) );
+		add_action( 'wp_ajax_vp_bulk_retry', array( $this, 'ajax_bulk_retry' ) );
+		add_action( 'wp_ajax_vp_bulk_delete', array( $this, 'ajax_bulk_delete' ) );
 	}
 
 	public static function default_prompt( $type ) {
@@ -148,6 +152,15 @@ class VP_Content_Generator {
 
 		VP_Logger::log( 'content_generator', count( $lines ) . " عنوان به صف انبوه (بسته‌ی $batch_id) اضافه شد.", 'info' );
 
+		// Process the first batch synchronously right away — relying purely
+		// on WP-Cron's 5-minute tick leaves the queue looking inert on hosts
+		// where cron only fires on real traffic, which is exactly what felt
+		// "just for show". This also nudges WP-Cron for the rest.
+		self::process_bulk_batch();
+		if ( function_exists( 'spawn_cron' ) ) {
+			spawn_cron();
+		}
+
 		wp_send_json_success( array( 'batch_id' => $batch_id, 'count' => count( $lines ) ) );
 	}
 
@@ -158,6 +171,91 @@ class VP_Content_Generator {
 		}
 
 		wp_send_json_success( self::bulk_summary() );
+	}
+
+	/**
+	 * Per-item visibility into the queue (title, status, error), filterable
+	 * by batch — this is what turns the queue from an opaque counter into
+	 * something an operator can actually audit and act on.
+	 */
+	public function ajax_bulk_list() {
+		check_ajax_referer( 'vp_suite_nonce', 'nonce' );
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'دسترسی غیرمجاز.', 'vp-suite' ) ), 403 );
+		}
+
+		global $wpdb;
+		$table   = $wpdb->prefix . 'vp_bulk_titles';
+		$batch   = sanitize_text_field( $_POST['batch_id'] ?? '' );
+		$status  = sanitize_key( $_POST['status'] ?? '' );
+		$limit   = min( 200, max( 1, absint( $_POST['limit'] ?? 50 ) ) );
+
+		$where  = array( '1=1' );
+		$params = array();
+		if ( $batch ) {
+			$where[]  = 'batch_id = %s';
+			$params[] = $batch;
+		}
+		if ( $status ) {
+			$where[]  = 'status = %s';
+			$params[] = $status;
+		}
+
+		$sql = "SELECT id, batch_id, job_type, title, status, job_id, error, created_at, processed_at FROM $table WHERE " . implode( ' AND ', $where ) . ' ORDER BY id DESC LIMIT %d';
+		$params[] = $limit;
+
+		$rows = $wpdb->get_results( $wpdb->prepare( $sql, $params ) );
+
+		wp_send_json_success( array( 'rows' => $rows, 'summary' => self::bulk_summary() ) );
+	}
+
+	/**
+	 * Lets an operator manually drain the queue instead of waiting for the
+	 * next cron tick — runs several batches back-to-back within a sane time
+	 * budget so even a large backlog visibly moves on demand.
+	 */
+	public function ajax_bulk_process_now() {
+		check_ajax_referer( 'vp_suite_nonce', 'nonce' );
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'دسترسی غیرمجاز.', 'vp-suite' ) ), 403 );
+		}
+
+		$processed = 0;
+		$deadline  = time() + 20;
+		do {
+			$count      = self::process_bulk_batch();
+			$processed += $count;
+		} while ( $count > 0 && time() < $deadline );
+
+		wp_send_json_success( array( 'processed' => $processed, 'summary' => self::bulk_summary() ) );
+	}
+
+	public function ajax_bulk_retry() {
+		check_ajax_referer( 'vp_suite_nonce', 'nonce' );
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'دسترسی غیرمجاز.', 'vp-suite' ) ), 403 );
+		}
+
+		global $wpdb;
+		$wpdb->update(
+			$wpdb->prefix . 'vp_bulk_titles',
+			array( 'status' => 'pending', 'error' => null, 'processed_at' => null ),
+			array( 'id' => absint( $_POST['id'] ?? 0 ) )
+		);
+
+		wp_send_json_success();
+	}
+
+	public function ajax_bulk_delete() {
+		check_ajax_referer( 'vp_suite_nonce', 'nonce' );
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'دسترسی غیرمجاز.', 'vp-suite' ) ), 403 );
+		}
+
+		global $wpdb;
+		$wpdb->delete( $wpdb->prefix . 'vp_bulk_titles', array( 'id' => absint( $_POST['id'] ?? 0 ) ) );
+
+		wp_send_json_success();
 	}
 
 	public static function bulk_summary() {

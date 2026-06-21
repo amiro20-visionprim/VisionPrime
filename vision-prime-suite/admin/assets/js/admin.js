@@ -40,6 +40,10 @@
 		$bulkProviderSelect.on('change', refreshBulkModels);
 		refreshBulkModels();
 
+		function bulkStatusLabel(s) {
+			return { pending: 'در انتظار', done: 'انجام‌شده', failed: 'ناموفق' }[s] || s;
+		}
+
 		function refreshBulkStatus() {
 			var $status = $('#vp-bulk-status');
 			if (!$status.length) return;
@@ -50,10 +54,71 @@
 				}
 			});
 		}
+
+		function escapeHtml(s) {
+			return $('<div>').text(s == null ? '' : String(s)).html();
+		}
+
+		function refreshBulkTable() {
+			var $body = $('#vp-bulk-table-body');
+			if (!$body.length) return;
+			postAjax('vp_bulk_list', { status: $('#vp-bulk-filter-status').val(), limit: 100 }).done(function (res) {
+				if (!res.success) return;
+				var d = res.data.summary;
+				$('#vp-bulk-status').text('در صف خودکار: ' + d.pending + ' در انتظار، ' + d.done + ' انجام‌شده، ' + d.failed + ' ناموفق.');
+
+				if (!res.data.rows.length) {
+					$body.html('<tr><td colspan="6">موردی یافت نشد.</td></tr>');
+					return;
+				}
+				var html = '';
+				res.data.rows.forEach(function (r) {
+					html += '<tr data-row-id="' + r.id + '">' +
+						'<td>' + escapeHtml(r.title) + '</td>' +
+						'<td>' + escapeHtml(r.job_type) + '</td>' +
+						'<td><span class="vp-badge vp-badge-' + r.status + '">' + bulkStatusLabel(r.status) + '</span></td>' +
+						'<td>' + (r.error ? '<span class="vp-error">' + escapeHtml(r.error) + '</span>' : '') + '</td>' +
+						'<td>' + escapeHtml(r.created_at) + '</td>' +
+						'<td>' +
+						(r.status === 'failed' ? '<button class="button vp-bulk-retry" data-id="' + r.id + '">تلاش دوباره</button> ' : '') +
+						(r.status === 'pending' ? '<button class="button vp-bulk-delete" data-id="' + r.id + '">حذف</button>' : '') +
+						'</td>' +
+						'</tr>';
+				});
+				$body.html(html);
+			});
+		}
+
 		if ($('#vp-bulk-status').length) {
 			refreshBulkStatus();
 			setInterval(refreshBulkStatus, 30000);
 		}
+
+		$('#vp-bulk-filter-status').on('change', refreshBulkTable);
+		$('#vp-bulk-refresh').on('click', refreshBulkTable);
+
+		$('#vp-bulk-process-now').on('click', function () {
+			var $btn = $(this).prop('disabled', true).text('در حال پردازش...');
+			postAjax('vp_bulk_process_now', {}).done(function (res) {
+				if (res.success) {
+					refreshBulkTable();
+				} else {
+					alert(res.data.message);
+				}
+			}).always(function () {
+				$btn.prop('disabled', false).text('پردازش الان');
+			});
+		});
+
+		$(document).on('click', '.vp-bulk-retry', function () {
+			var $btn = $(this).prop('disabled', true);
+			postAjax('vp_bulk_retry', { id: $btn.data('id') }).done(function () { refreshBulkTable(); });
+		});
+
+		$(document).on('click', '.vp-bulk-delete', function () {
+			var $btn = $(this).prop('disabled', true);
+			postAjax('vp_bulk_delete', { id: $btn.data('id') }).done(function () { refreshBulkTable(); });
+		});
 
 		$('#vp-bulk-form').on('submit', function (e) {
 			e.preventDefault();
@@ -71,7 +136,7 @@
 			}
 
 			var $btn = $form.find('button[type=submit]').prop('disabled', true);
-			$result.html('<p>در حال افزودن ' + titles.length + ' عنوان به صف...</p>');
+			$result.html('<p>در حال افزودن ' + titles.length + ' عنوان به صف و پردازش بسته‌ی اول...</p>');
 
 			postAjax('vp_bulk_enqueue', {
 				content_type: $form.find('[name=content_type]').val(),
@@ -80,9 +145,9 @@
 				titles: titles.join('\n')
 			}).done(function (res) {
 				if (res.success) {
-					$result.html('<p class="vp-success">' + res.data.count + ' عنوان به صف خودکار اضافه شد (بسته‌ی ' + res.data.batch_id + '). تولید به‌تدریج در پس‌زمینه انجام می‌شود.</p>');
+					$result.html('<p class="vp-success">' + res.data.count + ' عنوان به صف خودکار اضافه شد (بسته‌ی ' + res.data.batch_id + '). بسته‌ی اول بلافاصله پردازش شد؛ باقی به‌تدریج ادامه می‌یابد.</p>');
 					$form.find('[name=titles]').val('');
-					refreshBulkStatus();
+					refreshBulkTable();
 				} else {
 					$result.html('<p class="vp-error">' + res.data.message + '</p>');
 				}
@@ -547,6 +612,41 @@
 				var original = $btn.text();
 				$btn.text('کپی شد ✓');
 				setTimeout(function () { $btn.text(original); }, 1500);
+			});
+		});
+
+		// --- API key management: test / toggle / delete ---
+		$(document).on('click', '.vp-apikey-test', function () {
+			var $btn = $(this).prop('disabled', true);
+			var id = $btn.data('id');
+			var $result = $('.vp-apikey-test-result[data-id="' + id + '"]');
+			$result.removeClass('vp-success vp-error').text('در حال تست...');
+
+			postAjax('vp_apikey_test', { id: id }).done(function (res) {
+				if (res.success) {
+					$result.removeClass('vp-error').addClass('vp-success').text('✅ ' + res.data.message);
+				} else {
+					$result.removeClass('vp-success').addClass('vp-error').text('❌ ' + res.data.message);
+				}
+			}).fail(function () {
+				$result.removeClass('vp-success').addClass('vp-error').text('خطای ارتباط با سرور.');
+			}).always(function () { $btn.prop('disabled', false); });
+		});
+
+		$(document).on('click', '.vp-apikey-toggle', function () {
+			var $btn = $(this).prop('disabled', true);
+			postAjax('vp_apikey_toggle', { id: $btn.data('id') }).done(function (res) {
+				if (res.success) location.reload();
+				else { alert(res.data.message); $btn.prop('disabled', false); }
+			});
+		});
+
+		$(document).on('click', '.vp-apikey-delete', function () {
+			var $btn = $(this).prop('disabled', true);
+			if (!confirm('این کلید برای همیشه حذف شود؟')) { $btn.prop('disabled', false); return; }
+			postAjax('vp_apikey_delete', { id: $btn.data('id') }).done(function (res) {
+				if (res.success) location.reload();
+				else { alert(res.data.message); $btn.prop('disabled', false); }
 			});
 		});
 

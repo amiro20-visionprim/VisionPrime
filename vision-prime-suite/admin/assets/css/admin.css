@@ -118,6 +118,10 @@
 .vp-badge-error { background: rgba(251, 113, 133, 0.15); color: var(--vp-error); border-color: rgba(251, 113, 133, 0.4); }
 .vp-badge-warning { background: rgba(251, 191, 36, 0.15); color: var(--vp-warning); border-color: rgba(251, 191, 36, 0.4); }
 .vp-badge-info { background: rgba(34, 211, 238, 0.15); color: var(--vp-cyan); border-color: rgba(34, 211, 238, 0.4); }
+.vp-badge-pending { background: rgba(251, 191, 36, 0.15); color: var(--vp-warning); border-color: rgba(251, 191, 36, 0.4); }
+.vp-badge-done { background: rgba(52, 211, 153, 0.15); color: var(--vp-success); border-color: rgba(52, 211, 153, 0.4); }
+.vp-badge-failed { background: rgba(251, 113, 133, 0.15); color: var(--vp-error); border-color: rgba(251, 113, 133, 0.4); }
+.vp-apikey-test-result { margin-top: 6px; font-size: 12px; }
 
 .vp-log-list { list-style: none; margin: 0; padding: 0; }
 .vp-log-list li { padding: 10px 0; border-bottom: 1px solid var(--vp-border); font-size: 13px; color: var(--vp-text); }

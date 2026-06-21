@@ -190,23 +190,30 @@
 		</form>
 
 		<table class="widefat striped">
-			<thead><tr><th>برچسب</th><th>سرویس</th><th>Scope</th><th>اولویت</th><th>وضعیت</th><th>تاریخ</th></tr></thead>
+			<thead><tr><th>برچسب</th><th>سرویس</th><th>Scope</th><th>اولویت</th><th>وضعیت</th><th>تاریخ</th><th>عملیات</th></tr></thead>
 			<tbody>
 			<?php foreach ( $keys as $k ) : ?>
-				<tr>
+				<tr data-key-id="<?php echo esc_attr( $k->id ); ?>">
 					<td><?php echo esc_html( $k->label ); ?></td>
 					<td><?php echo esc_html( $k->provider ); ?></td>
 					<td><?php echo esc_html( $k->scope ); ?></td>
 					<td><?php echo esc_html( $k->priority ); ?></td>
-					<td><?php echo $k->is_active ? '✅' : '❌'; ?></td>
+					<td class="vp-key-status"><?php echo $k->is_active ? '✅ فعال' : '⛔️ غیرفعال'; ?></td>
 					<td><?php echo esc_html( $k->created_at ); ?></td>
+					<td>
+						<button type="button" class="button vp-apikey-test" data-id="<?php echo esc_attr( $k->id ); ?>">تست اتصال</button>
+						<button type="button" class="button vp-apikey-toggle" data-id="<?php echo esc_attr( $k->id ); ?>"><?php echo $k->is_active ? 'غیرفعال‌سازی' : 'فعال‌سازی'; ?></button>
+						<button type="button" class="button vp-apikey-delete" data-id="<?php echo esc_attr( $k->id ); ?>">حذف</button>
+						<div class="vp-apikey-test-result" data-id="<?php echo esc_attr( $k->id ); ?>"></div>
+					</td>
 				</tr>
 			<?php endforeach; ?>
 			<?php if ( empty( $keys ) ) : ?>
-				<tr><td colspan="6">کلیدی ثبت نشده است.</td></tr>
+				<tr><td colspan="7">کلیدی ثبت نشده است.</td></tr>
 			<?php endif; ?>
 			</tbody>
 		</table>
+		<p class="description">اگر کلید جدیدی اضافه کرده‌اید ولی محتوای تولید نمی‌شود، احتمالاً یک کلید قدیمی/نامعتبر با همین Scope هنوز «فعال» است و در صف اولویت زودتر امتحان می‌شود — با دکمه‌ی «تست اتصال» کلید معتبر را پیدا کنید و کلیدهای نامعتبر را غیرفعال یا حذف کنید.</p>
 		<p class="description">برای هر بخش (محتوا/سئو/رقبا/تصویر) می‌توانید چند کلید با اولویت‌های متفاوت ثبت کنید تا زنجیره‌ی جایگزین خودکار شکل بگیرد.</p>
 	</div>
 </div>

@@ -13,7 +13,87 @@ if ( ! defined( 'ABSPATH' ) ) {
 class VP_Api_Manager {
 
 	public function __construct() {
-		// Stateless service; nothing to hook on init.
+		add_action( 'wp_ajax_vp_apikey_test', array( $this, 'ajax_test_key' ) );
+		add_action( 'wp_ajax_vp_apikey_toggle', array( $this, 'ajax_toggle_key' ) );
+		add_action( 'wp_ajax_vp_apikey_delete', array( $this, 'ajax_delete_key' ) );
+	}
+
+	/**
+	 * Validates a key with a real, minimal round-trip call before it's
+	 * relied upon — this is what surfaces a bad/expired/mistyped key
+	 * immediately instead of leaving it silently first-in-line in the
+	 * fallback chain where it would keep failing every later attempt.
+	 */
+	public function ajax_test_key() {
+		check_ajax_referer( 'vp_suite_nonce', 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'دسترسی غیرمجاز.', 'vp-suite' ) ), 403 );
+		}
+
+		$id = absint( $_POST['id'] ?? 0 );
+		global $wpdb;
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}vp_api_keys WHERE id = %d", $id ) );
+		if ( ! $row ) {
+			wp_send_json_error( array( 'message' => __( 'کلید یافت نشد.', 'vp-suite' ) ) );
+		}
+
+		$result = self::test_key( $row->provider, $row->api_key );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		wp_send_json_success( array( 'message' => __( 'اتصال موفق بود؛ کلید معتبر است.', 'vp-suite' ) ) );
+	}
+
+	public function ajax_toggle_key() {
+		check_ajax_referer( 'vp_suite_nonce', 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'دسترسی غیرمجاز.', 'vp-suite' ) ), 403 );
+		}
+
+		$id = absint( $_POST['id'] ?? 0 );
+		global $wpdb;
+		$wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->prefix}vp_api_keys SET is_active = 1 - is_active, updated_at = %s WHERE id = %d", current_time( 'mysql' ), $id ) );
+
+		wp_send_json_success();
+	}
+
+	public function ajax_delete_key() {
+		check_ajax_referer( 'vp_suite_nonce', 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'دسترسی غیرمجاز.', 'vp-suite' ) ), 403 );
+		}
+
+		self::delete_key( absint( $_POST['id'] ?? 0 ) );
+		wp_send_json_success();
+	}
+
+	/**
+	 * Minimal real request against the provider to confirm a key actually
+	 * works, independent of any module's prompts/scope.
+	 */
+	public static function test_key( $provider, $api_key, $model = '' ) {
+		$config = VP_AI_Providers::get_provider( $provider );
+		if ( ! $config ) {
+			return new WP_Error( 'vp_unknown_provider', __( 'Provider نامشخص است.', 'vp-suite' ) );
+		}
+
+		if ( empty( $model ) ) {
+			$model = $config['models'][0] ?? '';
+		}
+		if ( empty( $model ) ) {
+			return new WP_Error( 'vp_no_model', __( 'مدلی برای این سرویس تعریف نشده است.', 'vp-suite' ) );
+		}
+
+		$messages = array( array( 'role' => 'user', 'content' => 'سلام' ) );
+		$result   = self::request( $provider, $model, $messages, $api_key );
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		return true;
 	}
 
 	public static function get_key( $provider, $scope = 'shared' ) {
@@ -183,6 +263,14 @@ class VP_Api_Manager {
 			return new WP_Error( 'vp_unknown_provider', __( 'Provider نامشخص است.', 'vp-suite' ) );
 		}
 
+		if ( empty( $key ) ) {
+			return new WP_Error( 'vp_missing_key', __( 'کلید API خالی است.', 'vp-suite' ) );
+		}
+
+		if ( 'google' === $provider ) {
+			return self::request_google( $config, $model, $messages, $key );
+		}
+
 		$body = ( 'anthropic' === $provider )
 			? array(
 				'model'      => $model,
@@ -200,6 +288,10 @@ class VP_Api_Manager {
 		);
 		$headers[ $config['auth_header'] ] = $config['auth_prefix'] . $key;
 
+		if ( 'anthropic' === $provider ) {
+			$headers['anthropic-version'] = '2023-06-01';
+		}
+
 		if ( 'openrouter' === $provider ) {
 			$headers['HTTP-Referer'] = home_url();
 			$headers['X-Title']      = 'VisionPrime Suite';
@@ -214,6 +306,49 @@ class VP_Api_Manager {
 			)
 		);
 
+		return self::handle_response( $provider, $model, $response );
+	}
+
+	/**
+	 * Google's Generative Language API uses a different URL shape
+	 * (model name is part of the path, not the body) and a different
+	 * request/response schema (contents/parts instead of messages),
+	 * so it can't share the OpenAI-style body builder above.
+	 */
+	private static function request_google( $config, $model, $messages, $key ) {
+		$contents = array();
+		foreach ( $messages as $m ) {
+			if ( 'system' === $m['role'] ) {
+				continue;
+			}
+			$contents[] = array(
+				'role'  => 'assistant' === $m['role'] ? 'model' : 'user',
+				'parts' => array( array( 'text' => $m['content'] ) ),
+			);
+		}
+
+		$body = array( 'contents' => $contents );
+		$system = self::extract_system( $messages );
+		if ( ! empty( $system ) ) {
+			$body['systemInstruction'] = array( 'parts' => array( array( 'text' => $system ) ) );
+		}
+
+		$response = wp_remote_post(
+			$config['endpoint'] . '/' . $model . ':generateContent',
+			array(
+				'headers' => array(
+					'Content-Type'  => 'application/json',
+					$config['auth_header'] => $key,
+				),
+				'body'    => wp_json_encode( $body ),
+				'timeout' => 90,
+			)
+		);
+
+		return self::handle_response( 'google', $model, $response );
+	}
+
+	private static function handle_response( $provider, $model, $response ) {
 		if ( is_wp_error( $response ) ) {
 			VP_Logger::log( 'api_manager', $response->get_error_message(), 'error', compact( 'provider', 'model' ) );
 			return $response;
@@ -223,14 +358,33 @@ class VP_Api_Manager {
 		$data = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( $code >= 400 ) {
-			VP_Logger::log( 'api_manager', 'HTTP ' . $code . ' از ' . $provider, 'error', array( 'response' => $data ) );
-			return new WP_Error( 'vp_api_error', sprintf( __( 'خطای سرویس %1$s (کد %2$d)', 'vp-suite' ), $provider, $code ) );
+			$detail = self::extract_error_message( $data );
+			VP_Logger::log( 'api_manager', 'HTTP ' . $code . ' از ' . $provider . ( $detail ? ": $detail" : '' ), 'error', array( 'response' => $data ) );
+			return new WP_Error(
+				'vp_api_error',
+				sprintf( __( 'خطای سرویس %1$s (کد %2$d)%3$s', 'vp-suite' ), $provider, $code, $detail ? ": $detail" : '' )
+			);
 		}
 
 		$text = self::extract_text( $provider, $data );
+		if ( '' === $text ) {
+			VP_Logger::log( 'api_manager', "پاسخ خالی از $provider/$model", 'warning', array( 'response' => $data ) );
+			return new WP_Error( 'vp_empty_response', __( 'پاسخ سرویس خالی بود.', 'vp-suite' ) );
+		}
+
 		VP_Logger::log( 'api_manager', "پاسخ موفق از $provider/$model", 'info' );
 
 		return $text;
+	}
+
+	private static function extract_error_message( $data ) {
+		if ( isset( $data['error']['message'] ) ) {
+			return $data['error']['message'];
+		}
+		if ( isset( $data['message'] ) ) {
+			return $data['message'];
+		}
+		return '';
 	}
 
 	private static function extract_system( $messages ) {
@@ -245,6 +399,9 @@ class VP_Api_Manager {
 	private static function extract_text( $provider, $data ) {
 		if ( 'anthropic' === $provider ) {
 			return isset( $data['content'][0]['text'] ) ? $data['content'][0]['text'] : '';
+		}
+		if ( 'google' === $provider ) {
+			return isset( $data['candidates'][0]['content']['parts'][0]['text'] ) ? $data['candidates'][0]['content']['parts'][0]['text'] : '';
 		}
 		return isset( $data['choices'][0]['message']['content'] ) ? $data['choices'][0]['message']['content'] : '';
 	}
