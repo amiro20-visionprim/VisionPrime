@@ -60,6 +60,11 @@ class VPOS_Loader {
 		require_once VPOS_DIR . 'modules/campaign/class-vpos-campaign-repository.php';
 		require_once VPOS_DIR . 'modules/campaign/class-vpos-campaign-rest.php';
 		require_once VPOS_DIR . 'modules/campaign/class-vpos-campaign-module.php';
+
+		// Phase 6 — Automation Engine.
+		require_once VPOS_DIR . 'modules/automation/class-vpos-automation-repository.php';
+		require_once VPOS_DIR . 'modules/automation/class-vpos-automation-rest.php';
+		require_once VPOS_DIR . 'modules/automation/class-vpos-automation-module.php';
 	}
 
 	public function init_modules() {
@@ -72,6 +77,7 @@ class VPOS_Loader {
 		$this->register_module( 'loyalty', new VPOS_Loyalty_Module() );
 		$this->register_module( 'club', new VPOS_Club_Module() );
 		$this->register_module( 'campaign', new VPOS_Campaign_Module() );
+		$this->register_module( 'automation', new VPOS_Automation_Module() );
 
 		if ( is_admin() ) {
 			$this->modules['admin'] = new VPOS_Admin();

@@ -109,6 +109,7 @@ class VPOS_Customer_Repository extends VPOS_Repository {
 		$id = $this->insert( $data );
 		$this->log_event( $id, 'customer_created', array() );
 		VPOS_Audit::log( 'customer:create', 'customer', $id, null, $data );
+		do_action( 'vpos_customer_created', $id, $data );
 		return $id;
 	}
 

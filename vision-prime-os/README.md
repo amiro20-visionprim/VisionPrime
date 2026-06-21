@@ -35,8 +35,8 @@ Operating System. Independent of, and unrelated to, the VisionPrime Suite
 | P2 (done) | Customer Data Platform, Customer 360, Order Engine |
 | P3 (done) | Wallet Ledger Engine |
 | P4 (done) | Loyalty, Rewards, Customer Club |
-| P5 (this commit) | Segments, Campaigns, Notifications |
-| P6 | Automation Engine |
+| P5 (done) | Segments, Campaigns, Notifications |
+| P6 (this commit) | Automation Engine |
 | P7 | Integrations, Reports, AI Intelligence Layer |
 
 Standing rules (non-negotiable across all phases): no direct wallet balance
@@ -183,3 +183,32 @@ actions automatically, every list endpoint paginated.
   again, a cancelled campaign can't be sent, scheduling enqueues a
   background job, marking a notification read is scoped to its owning
   customer, Customer 360 includes the notifications section.
+
+## Phase 6 notes
+
+- The Automation Engine (`modules/automation/class-vpos-automation-repository.php`)
+  is "when X happens and conditions match, do Y": triggers are the domain
+  events the plugin already fires (`vpos_customer_created` — newly added
+  this phase — `vpos_order_completed`, `vpos_order_cancelled`); conditions
+  reuse the exact same rule language as Segments (`VPOS_Segment_Repository::
+  resolve_rule_customer_ids()`); actions are a small fixed vocabulary
+  (`add_tag`, `notify`, `loyalty_earn`, `wallet_credit`) — there is no
+  arbitrary code execution, and the two financial actions go through the
+  same gated Loyalty/Wallet repositories a human admin would use, never a
+  shortcut around their rules.
+- Every rule execution writes one append-only row to `vpos_automation_runs`
+  (`success`/`failed` + error), so an automation's behavior is always
+  auditable after the fact — same non-negotiable as the audit log elsewhere
+  in the plugin. A failing action stops that rule's remaining actions but
+  never blocks other rules from running for the same event.
+- `VPOS_Automation_Module` is purely hook-based, the same pattern as Wallet/
+  Loyalty/Campaign — it listens to events, no other module references
+  Automation directly.
+- REST: `GET|POST /automations`, `GET|PATCH /automations/{id}`,
+  `GET /automations/{id}/runs`. wp-admin: **VisionPrime OS → Automations /
+  Automation**.
+- Tests: `tests/automation-test.php` — customer-created trigger runs an
+  add_tag action, order-completed trigger runs a loyalty_earn action, a
+  rule with unmet conditions doesn't run, an inactive rule doesn't run,
+  every run is logged, an unknown action type is logged as failed without
+  blocking other rules for the same event.
