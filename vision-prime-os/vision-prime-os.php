@@ -21,6 +21,10 @@ define( 'VPOS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'VPOS_URL', plugin_dir_url( __FILE__ ) );
 define( 'VPOS_DB_VERSION', '1' );
 
+add_action( 'plugins_loaded', function () {
+	load_plugin_textdomain( 'vpos', false, dirname( plugin_basename( VPOS_FILE ) ) . '/languages' );
+}, 1 );
+
 require_once VPOS_DIR . 'includes/class-vpos-loader.php';
 
 // Activation hooks can fire before 'plugins_loaded' reaches this plugin, so

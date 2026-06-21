@@ -1,0 +1,708 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: VisionPrime OS\n"
+"Language: fa_IR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\n"
+
+msgid "AI Insights"
+msgstr "بینش‌های هوش مصنوعی"
+
+msgid "Action Scheduler"
+msgstr "زمان‌بند اقدامات"
+
+msgid "Actions"
+msgstr "اقدامات"
+
+msgid "Actions (JSON array)"
+msgstr "اقدامات (آرایه JSON)"
+
+msgid "Activity"
+msgstr "فعالیت"
+
+msgid "Add Customer"
+msgstr "افزودن مشتری"
+
+msgid "Add New"
+msgstr "افزودن جدید"
+
+msgid "Add Note"
+msgstr "افزودن یادداشت"
+
+msgid "Add Reward"
+msgstr "افزودن جایزه"
+
+msgid "Add Tag"
+msgstr "افزودن برچسب"
+
+msgid "Add Tier"
+msgstr "افزودن سطح"
+
+msgid "Address"
+msgstr "آدرس"
+
+msgid "All Automations"
+msgstr "همه اتوماسیون‌ها"
+
+msgid "All Brands"
+msgstr "همه برندها"
+
+msgid "All Campaigns"
+msgstr "همه کمپین‌ها"
+
+msgid "All Customers"
+msgstr "همه مشتریان"
+
+msgid "All Orders"
+msgstr "همه سفارش‌ها"
+
+msgid "All Rewards"
+msgstr "همه جوایز"
+
+msgid "All Segments"
+msgstr "همه بخش‌ها"
+
+msgid "All Tiers"
+msgstr "همه سطوح"
+
+msgid "All branches"
+msgstr "همه شعبه‌ها"
+
+msgid "Amount"
+msgstr "مقدار"
+
+msgid "Approve"
+msgstr "تأیید"
+
+msgid "Archive"
+msgstr "بایگانی"
+
+msgid "Archive this branch?"
+msgstr "این شعبه بایگانی شود؟"
+
+msgid "Automation"
+msgstr "اتوماسیون"
+
+msgid "Automation not found."
+msgstr "اتوماسیون یافت نشد."
+
+msgid "Automations"
+msgstr "اتوماسیون‌ها"
+
+msgid "Available Rewards"
+msgstr "جوایز موجود"
+
+msgid "Average Order Value"
+msgstr "میانگین ارزش سفارش"
+
+msgid "Balance: %s"
+msgstr "موجودی: %s"
+
+msgid "Branch"
+msgstr "شعبه"
+
+msgid "Branch scope"
+msgstr "دامنه شعبه"
+
+msgid "Branches"
+msgstr "شعبه‌ها"
+
+msgid "Brand"
+msgstr "برند"
+
+msgid "Brand ID (Site ID)"
+msgstr "شناسه برند (شناسه سایت)"
+
+msgid "Brand Settings"
+msgstr "تنظیمات برند"
+
+msgid "Brand is not active; operational actions are blocked."
+msgstr "برند فعال نیست؛ اقدامات عملیاتی مسدود شده‌اند."
+
+msgid "Brand not found."
+msgstr "برند یافت نشد."
+
+msgid "Brand settings not found."
+msgstr "تنظیمات برند یافت نشد."
+
+msgid "Brands"
+msgstr "برندها"
+
+msgid "Campaign"
+msgstr "کمپین"
+
+msgid "Campaign not found."
+msgstr "کمپین یافت نشد."
+
+msgid "Campaigns"
+msgstr "کمپین‌ها"
+
+msgid "Cancel Campaign"
+msgstr "لغو کمپین"
+
+msgid "Cancel Order"
+msgstr "لغو سفارش"
+
+msgid "Channel"
+msgstr "کانال"
+
+msgid "City"
+msgstr "شهر"
+
+msgid "Club Domain"
+msgstr "دامنه کلوب"
+
+msgid "Code"
+msgstr "کد"
+
+msgid "Conditions (JSON)"
+msgstr "شرایط (JSON)"
+
+msgid "Conditions (JSON, optional)"
+msgstr "شرایط (JSON، اختیاری)"
+
+msgid "Country"
+msgstr "کشور"
+
+msgid "Create Automation"
+msgstr "ایجاد اتوماسیون"
+
+msgid "Create Branch"
+msgstr "ایجاد شعبه"
+
+msgid "Create Brand"
+msgstr "ایجاد برند"
+
+msgid "Create Campaign"
+msgstr "ایجاد کمپین"
+
+msgid "Create Order"
+msgstr "ایجاد سفارش"
+
+msgid "Create Organization"
+msgstr "ایجاد سازمان"
+
+msgid "Create Segment"
+msgstr "ایجاد بخش"
+
+msgid "Created"
+msgstr "تاریخ ایجاد"
+
+msgid "Credit"
+msgstr "بستانکار"
+
+msgid "Currency"
+msgstr "واحد پول"
+
+msgid "Currently matches %d customers."
+msgstr "در حال حاضر با %d مشتری مطابقت دارد."
+
+msgid "Customer"
+msgstr "مشتری"
+
+msgid "Customer 360"
+msgstr "پروفایل ۳۶۰ مشتری"
+
+msgid "Customer Club"
+msgstr "کلوب مشتریان"
+
+msgid "Customer Growth"
+msgstr "رشد مشتریان"
+
+msgid "Customer ID"
+msgstr "شناسه مشتری"
+
+msgid "Customer not found."
+msgstr "مشتری یافت نشد."
+
+msgid "Customers"
+msgstr "مشتریان"
+
+msgid "DB schema version"
+msgstr "نسخه ساختار پایگاه داده"
+
+msgid "Date"
+msgstr "تاریخ"
+
+msgid "Debit"
+msgstr "بدهکار"
+
+msgid "Default Currency"
+msgstr "واحد پول پیش‌فرض"
+
+msgid "Description"
+msgstr "توضیحات"
+
+msgid "Direction"
+msgstr "جهت"
+
+msgid "Edit"
+msgstr "ویرایش"
+
+msgid "Edit Branch"
+msgstr "ویرایش شعبه"
+
+msgid "Edit Brand Settings →"
+msgstr "ویرایش تنظیمات برند ←"
+
+msgid "Edit Organization"
+msgstr "ویرایش سازمان"
+
+msgid "Email"
+msgstr "ایمیل"
+
+msgid "Error"
+msgstr "خطا"
+
+msgid "Filter"
+msgstr "فیلتر"
+
+msgid "First Name"
+msgstr "نام"
+
+msgid "From"
+msgstr "از"
+
+msgid "Integration Logs"
+msgstr "گزارش‌های یکپارچه‌سازی"
+
+msgid "Items"
+msgstr "اقلام"
+
+msgid "Job queue"
+msgstr "صف وظایف"
+
+msgid "Language"
+msgstr "زبان"
+
+msgid "Last Name"
+msgstr "نام خانوادگی"
+
+msgid "Last Seen"
+msgstr "آخرین بازدید"
+
+msgid "Ledger"
+msgstr "دفتر کل"
+
+msgid "Legal Name"
+msgstr "نام قانونی"
+
+msgid "Liabilities"
+msgstr "تعهدات"
+
+msgid "Lifetime Value"
+msgstr "ارزش طول عمر"
+
+msgid "Load"
+msgstr "بارگذاری"
+
+msgid "Load Wallet"
+msgstr "شارژ کیف پول"
+
+msgid "Log Out"
+msgstr "خروج"
+
+msgid "Loyalty"
+msgstr "وفاداری"
+
+msgid "Loyalty Liability"
+msgstr "تعهد امتیازات وفاداری"
+
+msgid "Loyalty Tiers"
+msgstr "سطوح وفاداری"
+
+msgid "Mark Completed"
+msgstr "علامت‌گذاری به‌عنوان تکمیل‌شده"
+
+msgid "Message"
+msgstr "پیام"
+
+msgid "Min Points"
+msgstr "حداقل امتیاز"
+
+msgid "Minimum Lifetime Points"
+msgstr "حداقل امتیاز کل"
+
+msgid "Mobile"
+msgstr "موبایل"
+
+msgid "Mobile Number"
+msgstr "شماره موبایل"
+
+msgid "Multiplier"
+msgstr "ضریب"
+
+msgid "Name"
+msgstr "نام"
+
+msgid "New Customers"
+msgstr "مشتریان جدید"
+
+msgid "New Order"
+msgstr "سفارش جدید"
+
+msgid "No"
+msgstr "خیر"
+
+msgid "No automations yet."
+msgstr "هنوز اتوماسیونی وجود ندارد."
+
+msgid "No branches yet."
+msgstr "هنوز شعبه‌ای وجود ندارد."
+
+msgid "No brands yet."
+msgstr "هنوز برندی وجود ندارد."
+
+msgid "No campaigns yet."
+msgstr "هنوز کمپینی وجود ندارد."
+
+msgid "No customers yet."
+msgstr "هنوز مشتری‌ای وجود ندارد."
+
+msgid "No integration activity yet."
+msgstr "هنوز فعالیت یکپارچه‌سازی وجود ندارد."
+
+msgid "No items."
+msgstr "موردی وجود ندارد."
+
+msgid "No ledger entries yet."
+msgstr "هنوز تراکنشی ثبت نشده است."
+
+msgid "No orders yet."
+msgstr "هنوز سفارشی وجود ندارد."
+
+msgid "No organizations yet."
+msgstr "هنوز سازمانی وجود ندارد."
+
+msgid "No pending insights."
+msgstr "بینش در انتظاری وجود ندارد."
+
+msgid "No redemptions yet."
+msgstr "هنوز بازخریدی انجام نشده است."
+
+msgid "No rewards available right now."
+msgstr "در حال حاضر جایزه‌ای موجود نیست."
+
+msgid "No rewards yet."
+msgstr "هنوز جایزه‌ای وجود ندارد."
+
+msgid "No runs yet."
+msgstr "هنوز اجرایی ثبت نشده است."
+
+msgid "No segments yet."
+msgstr "هنوز بخشی وجود ندارد."
+
+msgid "No tags."
+msgstr "برچسبی وجود ندارد."
+
+msgid "No tiers yet."
+msgstr "هنوز سطحی وجود ندارد."
+
+msgid "Not sent yet."
+msgstr "هنوز ارسال نشده است."
+
+msgid "Notes"
+msgstr "یادداشت‌ها"
+
+msgid "Order"
+msgstr "سفارش"
+
+msgid "Order #"
+msgstr "سفارش #"
+
+msgid "Order not found."
+msgstr "سفارش یافت نشد."
+
+msgid "Orders"
+msgstr "سفارش‌ها"
+
+msgid "Organization"
+msgstr "سازمان"
+
+msgid "Organizations"
+msgstr "سازمان‌ها"
+
+msgid "Permissions"
+msgstr "دسترسی‌ها"
+
+msgid "Phone"
+msgstr "تلفن"
+
+msgid "Please log in to view your account."
+msgstr "برای مشاهده حساب خود وارد شوید."
+
+msgid "Points Balance: %s"
+msgstr "موجودی امتیاز: %s"
+
+msgid "Points Cost"
+msgstr "هزینه به امتیاز"
+
+msgid "Points Multiplier"
+msgstr "ضریب امتیاز"
+
+msgid "Points Spent"
+msgstr "امتیاز خرج‌شده"
+
+msgid "Points balance: %s"
+msgstr "موجودی امتیاز: %s"
+
+msgid "Primary Color"
+msgstr "رنگ اصلی"
+
+msgid "Privacy URL"
+msgstr "آدرس حریم خصوصی"
+
+msgid "Product"
+msgstr "محصول"
+
+msgid "Profile"
+msgstr "پروفایل"
+
+msgid "Provider"
+msgstr "ارائه‌دهنده"
+
+msgid "Province"
+msgstr "استان"
+
+msgid "Purchases"
+msgstr "خریدها"
+
+msgid "Qty"
+msgstr "تعداد"
+
+msgid "Quantity"
+msgstr "تعداد"
+
+msgid "Reason"
+msgstr "دلیل"
+
+msgid "Recent Orders"
+msgstr "سفارش‌های اخیر"
+
+msgid "Recipient"
+msgstr "گیرنده"
+
+msgid "Recipients"
+msgstr "گیرندگان"
+
+msgid "Redeem"
+msgstr "بازخرید"
+
+msgid "Redeem Reward"
+msgstr "بازخرید جایزه"
+
+msgid "Redeem Reward →"
+msgstr "بازخرید جایزه ←"
+
+msgid "Redemption History"
+msgstr "تاریخچه بازخرید"
+
+msgid "Reject"
+msgstr "رد"
+
+msgid "Reports"
+msgstr "گزارش‌ها"
+
+msgid "Response"
+msgstr "پاسخ"
+
+msgid "Revenue"
+msgstr "درآمد"
+
+msgid "Reverse"
+msgstr "برگشت"
+
+msgid "Reward"
+msgstr "جایزه"
+
+msgid "Rewards"
+msgstr "جوایز"
+
+msgid "Rewards Catalog"
+msgstr "کاتالوگ جوایز"
+
+msgid "Rules (JSON)"
+msgstr "قوانین (JSON)"
+
+msgid "Run History"
+msgstr "تاریخچه اجرا"
+
+msgid "Runs"
+msgstr "اجراها"
+
+msgid "SMS Sender Name"
+msgstr "نام فرستنده پیامک"
+
+msgid "Save Changes"
+msgstr "ذخیره تغییرات"
+
+msgid "Save Settings"
+msgstr "ذخیره تنظیمات"
+
+msgid "Schedule"
+msgstr "زمان‌بندی"
+
+msgid "Secondary Color"
+msgstr "رنگ ثانویه"
+
+msgid "Segment"
+msgstr "بخش"
+
+msgid "Segment not found."
+msgstr "بخش یافت نشد."
+
+msgid "Segments"
+msgstr "بخش‌ها"
+
+msgid "Send Code"
+msgstr "ارسال کد"
+
+msgid "Send Now"
+msgstr "ارسال فوری"
+
+msgid "Sends"
+msgstr "ارسال‌ها"
+
+msgid "Site ID"
+msgstr "شناسه سایت"
+
+msgid "Slug"
+msgstr "شناسه یکتا"
+
+msgid "Status"
+msgstr "وضعیت"
+
+msgid "Stock"
+msgstr "موجودی انبار"
+
+msgid "Stock (blank = unlimited)"
+msgstr "موجودی انبار (خالی = نامحدود)"
+
+msgid "Subject"
+msgstr "موضوع"
+
+msgid "Subtotal"
+msgstr "جمع جزء"
+
+msgid "Suggested Action"
+msgstr "اقدام پیشنهادی"
+
+msgid "Super Admin"
+msgstr "مدیر کل"
+
+msgid "Support Email"
+msgstr "ایمیل پشتیبانی"
+
+msgid "Support Phone"
+msgstr "تلفن پشتیبانی"
+
+msgid "Tags"
+msgstr "برچسب‌ها"
+
+msgid "Tenant, Customer, Wallet and other modules will appear here as each phase is built."
+msgstr "با تکمیل هر فاز، ماژول‌های سازمان، مشتری، کیف پول و سایر بخش‌ها در اینجا نمایش داده می‌شوند."
+
+msgid "Terms URL"
+msgstr "آدرس قوانین و مقررات"
+
+msgid "Tier: %s"
+msgstr "سطح: %s"
+
+msgid "Timezone"
+msgstr "منطقه زمانی"
+
+msgid "To"
+msgstr "تا"
+
+msgid "Top Customers"
+msgstr "برترین مشتریان"
+
+msgid "Total"
+msgstr "مجموع"
+
+msgid "Total Spent"
+msgstr "مجموع خرید"
+
+msgid "Trigger"
+msgstr "محرک"
+
+msgid "Type"
+msgstr "نوع"
+
+msgid "Unit Price"
+msgstr "قیمت واحد"
+
+msgid "Unlimited"
+msgstr "نامحدود"
+
+msgid "Verification Code"
+msgstr "کد تأیید"
+
+msgid "Verify & Log In"
+msgstr "تأیید و ورود"
+
+msgid "View"
+msgstr "مشاهده"
+
+msgid "View 360"
+msgstr "مشاهده پروفایل ۳۶۰"
+
+msgid "View Wallet →"
+msgstr "مشاهده کیف پول ←"
+
+msgid "VisionPrime OS"
+msgstr "ویژن‌پرایم اواس"
+
+msgid "WP-Cron fallback"
+msgstr "بازگشتی WP-Cron"
+
+msgid "Wallet"
+msgstr "کیف پول"
+
+msgid "Wallet Liability"
+msgstr "تعهد کیف پول"
+
+msgid "Wallet balance: %s"
+msgstr "موجودی کیف پول: %s"
+
+msgid "We sent a code to %s."
+msgstr "کدی به %s ارسال شد."
+
+msgid "Welcome, %s"
+msgstr "خوش آمدید، %s"
+
+msgid "Yes"
+msgstr "بله"
+
+msgid "You are already logged in."
+msgstr "شما قبلاً وارد شده‌اید."
+
+msgid "You do not have permission to perform this action."
+msgstr "شما اجازه انجام این عملیات را ندارید."
+
+msgid "You do not have permission to view this page."
+msgstr "شما اجازه مشاهده این صفحه را ندارید."
+
+msgid "active"
+msgstr "فعال"
+
+msgid "amount"
+msgstr "مقدار"
+
+msgid "inactive"
+msgstr "غیرفعال"
+
+msgid "points"
+msgstr "امتیاز"
+
+msgid "reason"
+msgstr "دلیل"
+
+msgid "tag"
+msgstr "برچسب"
+
+msgid "— All customers —"
+msgstr "— همه مشتریان —"
+
