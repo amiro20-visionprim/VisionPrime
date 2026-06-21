@@ -34,6 +34,12 @@ class VPOS_Loader {
 		require_once VPOS_DIR . 'modules/tenant/class-vpos-branch-repository.php';
 		require_once VPOS_DIR . 'modules/tenant/class-vpos-tenant-rest.php';
 		require_once VPOS_DIR . 'modules/tenant/class-vpos-tenant-module.php';
+
+		// Phase 2 — Customer Data Platform, Customer 360, Order Engine.
+		require_once VPOS_DIR . 'modules/customer/class-vpos-customer-repository.php';
+		require_once VPOS_DIR . 'modules/customer/class-vpos-order-repository.php';
+		require_once VPOS_DIR . 'modules/customer/class-vpos-customer-rest.php';
+		require_once VPOS_DIR . 'modules/customer/class-vpos-customer-module.php';
 	}
 
 	public function init_modules() {
@@ -41,6 +47,7 @@ class VPOS_Loader {
 		VPOS_Jobs::instance()->register_hooks();
 
 		$this->register_module( 'tenant', new VPOS_Tenant_Module() );
+		$this->register_module( 'customer', new VPOS_Customer_Module() );
 
 		if ( is_admin() ) {
 			$this->modules['admin'] = new VPOS_Admin();

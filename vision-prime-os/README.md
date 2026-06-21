@@ -31,8 +31,8 @@ Operating System. Independent of, and unrelated to, the VisionPrime Suite
 | Phase | Scope |
 |---|---|
 | P0 (done) | Plugin skeleton, base layer, RBAC roles, audit log, admin shell |
-| P1 (this commit) | Organization/Brand/Branch, brand_settings, REST API, admin UI, tests |
-| P2 | Customer Data Platform, Customer 360, Order Engine |
+| P1 (done) | Organization/Brand/Branch, brand_settings, REST API, admin UI, tests |
+| P2 (this commit) | Customer Data Platform, Customer 360, Order Engine |
 | P3 | Wallet Ledger Engine |
 | P4 | Loyalty, Rewards, Customer Club |
 | P5 | Segments, Campaigns, Notifications |
@@ -61,3 +61,31 @@ actions automatically, every list endpoint paginated.
   Branches are managed from each brand's own site).
 - Tests: `tests/tenant-test.php` (run with `phpunit`, requires the WP
   Multisite test suite — see `tests/bootstrap.php`).
+
+## Phase 2 notes
+
+- Customer Data Platform lives in `modules/customer/`: one repository
+  class (`VPOS_Customer_Repository`) owns the customer table plus its
+  tightly-related sub-entities (notes, tags, events, merge logs) rather
+  than four separate repository classes — duplicate detection is a unique
+  key on `primary_mobile`, and because customer tables are per-site
+  (per-brand), that uniqueness is automatically brand-scoped.
+- Order Engine (`VPOS_Order_Repository`) is branch-scoped and owns its
+  line items. Completing/cancelling an order updates the customer's
+  rollup metrics (`purchase_count`, `total_spent`, `average_order_value`,
+  `lifetime_value`) and fires `vpos_order_completed` / `vpos_order_cancelled`
+  hooks so Phase 3 (Wallet) and Phase 4 (Loyalty) can react without this
+  module knowing about them.
+- Customer 360 (`GET /customers/{id}/360`) aggregates profile, tags,
+  notes, events and recent orders into one read-only response, filterable
+  via `vpos_customer_360` so later phases can append their own sections
+  (wallet balance, loyalty tier, active rewards) without editing this
+  controller.
+- REST API: `wp-json/visionprime/v1/{customers,orders}` per Master Spec
+  §12-14. wp-admin UI lives under **VisionPrime OS → Customers / Customer
+  360 / Orders / Order**.
+- Tests: `tests/customer-test.php` — duplicate mobile detection, brand-
+  scoped duplicate detection (multisite-gated), merge log + metric
+  summing, order requires existing customer, completed order updates
+  customer metrics, cancelling a completed order reverses those metrics,
+  Customer 360 aggregation.
