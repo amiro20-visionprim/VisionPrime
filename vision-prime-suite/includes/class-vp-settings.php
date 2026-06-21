@@ -29,6 +29,7 @@ class VP_Settings {
 			'product_prompt'    => VP_Content_Generator::default_prompt( 'product' ),
 			'seo_prompt'        => VP_SEO_Engine::default_prompt(),
 			'competitor_prompt' => VP_Competitor_Analysis::default_prompt(),
+			'calendar_smart_prompt' => VP_Content_Calendar::default_smart_prompt(),
 			'rankmath_sync'     => true,
 			'image_generation'  => true,
 			'report_recipients' => get_option( 'admin_email' ),

@@ -199,7 +199,7 @@ class VP_Admin {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
-		$fields = array( 'default_provider', 'article_prompt', 'product_prompt', 'seo_prompt', 'competitor_prompt', 'brand_voice' );
+		$fields = array( 'default_provider', 'article_prompt', 'product_prompt', 'seo_prompt', 'competitor_prompt', 'calendar_smart_prompt', 'brand_voice' );
 		foreach ( $fields as $field ) {
 			if ( isset( $_POST[ $field ] ) ) {
 				VP_Settings::update( $field, wp_kses_post( wp_unslash( $_POST[ $field ] ) ) );

@@ -259,6 +259,33 @@
 			});
 		});
 
+		$('#vp-calendar-smart-form').on('submit', function (e) {
+			e.preventDefault();
+			var $form = $(this);
+			var $result = $('#vp-calendar-smart-result');
+			var $btn = $form.find('button[type=submit]').prop('disabled', true);
+			$result.html('<p>در حال طراحی برنامه‌ی روزانه با هوش مصنوعی...</p>');
+
+			postAjax('vp_calendar_smart_plan', {
+				brief: $form.find('[name=brief]').val(),
+				date: $form.find('[name=date]').val(),
+				count: $form.find('[name=count]').val(),
+				provider: $form.find('[name=provider]').val(),
+				auto_publish: $form.find('[name=auto_publish]').is(':checked') ? 1 : 0
+			}).done(function (res) {
+				if (res.success) {
+					$result.html('<p class="vp-success">' + res.data.count + ' آیتم به تقویم اضافه شد؛ صفحه به‌زودی بازخوانی می‌شود...</p>');
+					setTimeout(function () { location.reload(); }, 1200);
+				} else {
+					$result.html('<p class="vp-error">' + res.data.message + '</p>');
+					$btn.prop('disabled', false);
+				}
+			}).fail(function () {
+				$result.html('<p class="vp-error">خطای ارتباط با سرور.</p>');
+				$btn.prop('disabled', false);
+			});
+		});
+
 		// --- Keyword cannibalization detection ---
 		$('#vp-cannibal-scan').on('click', function () {
 			var $btn = $(this).prop('disabled', true);

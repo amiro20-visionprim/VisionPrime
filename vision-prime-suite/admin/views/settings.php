@@ -34,6 +34,13 @@
 					<td><textarea name="competitor_prompt" rows="5" class="large-text"><?php echo esc_textarea( $settings['competitor_prompt'] ); ?></textarea></td>
 				</tr>
 				<tr>
+					<th><label>پرامپت برنامه‌ی هوشمند روزانه‌ی تقویم محتوایی</label></th>
+					<td>
+						<textarea name="calendar_smart_prompt" rows="5" class="large-text"><?php echo esc_textarea( $settings['calendar_smart_prompt'] ); ?></textarea>
+						<p class="description">وقتی در «تقویم محتوایی» از حالت «برنامه‌ی هوشمند روزانه» استفاده می‌کنید، این پرامپت سیستم برای تبدیل بریف شما به فهرست موضوعات روزانه به‌کار می‌رود.</p>
+					</td>
+				</tr>
+				<tr>
 					<th><label>هویت/لحن برند این سایت</label></th>
 					<td>
 						<textarea name="brand_voice" rows="3" class="large-text" placeholder="مثلاً: لحن دوستانه و غیررسمی، خطاب به مخاطب جوان، از اصطلاحات تخصصی سنگین پرهیز شود..."><?php echo esc_textarea( $settings['brand_voice'] ); ?></textarea>
