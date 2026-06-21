@@ -23,6 +23,74 @@
 		$providerSelect.on('change', refreshModels);
 		refreshModels();
 
+		// --- Bulk titles form: same provider->model behavior, separate ids ---
+		var $bulkProviderSelect = $('#vp-bulk-provider');
+		var $bulkModelSelect = $('#vp-bulk-model');
+
+		function refreshBulkModels() {
+			if (!window.VPProviders || !$bulkProviderSelect.length) return;
+			var provider = window.VPProviders[$bulkProviderSelect.val()];
+			$bulkModelSelect.empty();
+			if (provider && provider.models) {
+				provider.models.forEach(function (m) {
+					$bulkModelSelect.append($('<option>').val(m).text(m));
+				});
+			}
+		}
+		$bulkProviderSelect.on('change', refreshBulkModels);
+		refreshBulkModels();
+
+		function refreshBulkStatus() {
+			var $status = $('#vp-bulk-status');
+			if (!$status.length) return;
+			postAjax('vp_bulk_status', {}).done(function (res) {
+				if (res.success) {
+					var d = res.data;
+					$status.text('در صف خودکار: ' + d.pending + ' در انتظار، ' + d.done + ' انجام‌شده، ' + d.failed + ' ناموفق.');
+				}
+			});
+		}
+		if ($('#vp-bulk-status').length) {
+			refreshBulkStatus();
+			setInterval(refreshBulkStatus, 30000);
+		}
+
+		$('#vp-bulk-form').on('submit', function (e) {
+			e.preventDefault();
+			var $form = $(this);
+			var $result = $('#vp-bulk-result');
+			var titles = $form.find('[name=titles]').val().split(/\r\n|\r|\n/).filter(function (t) { return t.trim().length; });
+
+			if (!titles.length) {
+				$result.html('<p class="vp-error">حداقل یک عنوان وارد کنید.</p>');
+				return;
+			}
+			if (titles.length > 2000) {
+				$result.html('<p class="vp-error">حداکثر ۲۰۰۰ عنوان قابل پذیرش است؛ تعداد فعلی: ' + titles.length + '</p>');
+				return;
+			}
+
+			var $btn = $form.find('button[type=submit]').prop('disabled', true);
+			$result.html('<p>در حال افزودن ' + titles.length + ' عنوان به صف...</p>');
+
+			postAjax('vp_bulk_enqueue', {
+				content_type: $form.find('[name=content_type]').val(),
+				provider: $form.find('[name=provider]').val(),
+				model: $form.find('[name=model]').val(),
+				titles: titles.join('\n')
+			}).done(function (res) {
+				if (res.success) {
+					$result.html('<p class="vp-success">' + res.data.count + ' عنوان به صف خودکار اضافه شد (بسته‌ی ' + res.data.batch_id + '). تولید به‌تدریج در پس‌زمینه انجام می‌شود.</p>');
+					$form.find('[name=titles]').val('');
+					refreshBulkStatus();
+				} else {
+					$result.html('<p class="vp-error">' + res.data.message + '</p>');
+				}
+			}).fail(function () {
+				$result.html('<p class="vp-error">خطای ارتباط با سرور.</p>');
+			}).always(function () { $btn.prop('disabled', false); });
+		});
+
 		$('#vp-generate-form').on('submit', function (e) {
 			e.preventDefault();
 			var $form = $(this);

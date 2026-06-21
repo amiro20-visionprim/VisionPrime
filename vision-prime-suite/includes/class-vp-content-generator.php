@@ -10,8 +10,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class VP_Content_Generator {
 
+	const BULK_MAX_TITLES   = 2000;
+	const BULK_BATCH_SIZE   = 5;
+
 	public function __construct() {
 		add_action( 'wp_ajax_vp_generate_content', array( $this, 'ajax_generate' ) );
+		add_action( 'wp_ajax_vp_bulk_enqueue', array( $this, 'ajax_bulk_enqueue' ) );
+		add_action( 'wp_ajax_vp_bulk_status', array( $this, 'ajax_bulk_status' ) );
 	}
 
 	public static function default_prompt( $type ) {
@@ -88,5 +93,119 @@ class VP_Content_Generator {
 		VP_Logger::log( 'content_generator', "محتوای $type برای «$topic» تولید شد.", 'info', array( 'job_id' => $job_id ) );
 
 		return array( 'content' => $response, 'job_id' => $job_id );
+	}
+
+	/**
+	 * Accepts a newline-separated textarea of up to BULK_MAX_TITLES titles
+	 * and queues each as a 'pending' row in vp_bulk_titles. Actual generation
+	 * happens gradually via VP_Cron (small batches per tick) so a 2000-title
+	 * paste never has to run synchronously inside one HTTP request.
+	 */
+	public function ajax_bulk_enqueue() {
+		check_ajax_referer( 'vp_suite_nonce', 'nonce' );
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'دسترسی غیرمجاز.', 'vp-suite' ) ), 403 );
+		}
+
+		$type     = sanitize_key( $_POST['content_type'] ?? 'article' );
+		$provider = sanitize_key( $_POST['provider'] ?? VP_Settings::get( 'default_provider' ) );
+		$model    = sanitize_text_field( $_POST['model'] ?? '' );
+		$raw      = (string) ( $_POST['titles'] ?? '' );
+
+		$lines = array_filter( array_map( 'trim', preg_split( '/\r\n|\r|\n/', $raw ) ) );
+		$lines = array_values( array_unique( $lines ) );
+
+		if ( empty( $lines ) ) {
+			wp_send_json_error( array( 'message' => __( 'حداقل یک عنوان وارد کنید.', 'vp-suite' ) ) );
+		}
+
+		if ( count( $lines ) > self::BULK_MAX_TITLES ) {
+			$lines = array_slice( $lines, 0, self::BULK_MAX_TITLES );
+		}
+
+		global $wpdb;
+		$batch_id = 'b' . time() . wp_generate_password( 6, false );
+		$now      = current_time( 'mysql' );
+
+		foreach ( $lines as $title ) {
+			$title = sanitize_text_field( $title );
+			if ( '' === $title ) {
+				continue;
+			}
+			$wpdb->insert(
+				$wpdb->prefix . 'vp_bulk_titles',
+				array(
+					'batch_id'   => $batch_id,
+					'job_type'   => $type,
+					'title'      => $title,
+					'provider'   => $provider,
+					'model'      => $model,
+					'status'     => 'pending',
+					'created_at' => $now,
+				)
+			);
+		}
+
+		VP_Logger::log( 'content_generator', count( $lines ) . " عنوان به صف انبوه (بسته‌ی $batch_id) اضافه شد.", 'info' );
+
+		wp_send_json_success( array( 'batch_id' => $batch_id, 'count' => count( $lines ) ) );
+	}
+
+	public function ajax_bulk_status() {
+		check_ajax_referer( 'vp_suite_nonce', 'nonce' );
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'دسترسی غیرمجاز.', 'vp-suite' ) ), 403 );
+		}
+
+		wp_send_json_success( self::bulk_summary() );
+	}
+
+	public static function bulk_summary() {
+		global $wpdb;
+		$table = $wpdb->prefix . 'vp_bulk_titles';
+		$rows  = $wpdb->get_results( "SELECT status, COUNT(*) AS c FROM $table GROUP BY status", ARRAY_A );
+
+		$summary = array( 'pending' => 0, 'done' => 0, 'failed' => 0 );
+		foreach ( $rows as $row ) {
+			$summary[ $row['status'] ] = (int) $row['c'];
+		}
+		return $summary;
+	}
+
+	/**
+	 * Processes a small batch of pending bulk titles. Called from VP_Cron on
+	 * its 5-minute tick so a 2000-title paste drains gradually instead of
+	 * hammering the AI provider (and the request timeout) all at once.
+	 *
+	 * @return int Number of titles processed in this tick.
+	 */
+	public static function process_bulk_batch() {
+		global $wpdb;
+		$table = $wpdb->prefix . 'vp_bulk_titles';
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare( "SELECT * FROM $table WHERE status = 'pending' ORDER BY id ASC LIMIT %d", self::BULK_BATCH_SIZE )
+		);
+
+		foreach ( $rows as $row ) {
+			$result = self::generate( $row->job_type, $row->title, $row->keyword ?: $row->title, $row->provider ?: VP_Settings::get( 'default_provider' ), $row->model ?: '' );
+
+			if ( is_wp_error( $result ) ) {
+				$wpdb->update(
+					$table,
+					array( 'status' => 'failed', 'error' => $result->get_error_message(), 'processed_at' => current_time( 'mysql' ) ),
+					array( 'id' => $row->id )
+				);
+				continue;
+			}
+
+			$wpdb->update(
+				$table,
+				array( 'status' => 'done', 'job_id' => $result['job_id'], 'processed_at' => current_time( 'mysql' ) ),
+				array( 'id' => $row->id )
+			);
+		}
+
+		return count( $rows );
 	}
 }

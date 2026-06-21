@@ -19,7 +19,7 @@ define( 'VP_SUITE_VERSION', '1.1.1' );
 define( 'VP_SUITE_FILE', __FILE__ );
 define( 'VP_SUITE_DIR', plugin_dir_path( __FILE__ ) );
 define( 'VP_SUITE_URL', plugin_dir_url( __FILE__ ) );
-define( 'VP_SUITE_DB_VERSION', '5' );
+define( 'VP_SUITE_DB_VERSION', '6' );
 
 require_once VP_SUITE_DIR . 'includes/class-vp-loader.php';
 

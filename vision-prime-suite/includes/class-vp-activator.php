@@ -203,6 +203,24 @@ class VP_Activator {
 			KEY snapshot_date (snapshot_date)
 		) $charset_collate;";
 
+		$sql[] = "CREATE TABLE {$prefix}vp_bulk_titles (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			batch_id VARCHAR(40) NOT NULL,
+			job_type VARCHAR(40) NOT NULL DEFAULT 'article',
+			title VARCHAR(500) NOT NULL,
+			keyword VARCHAR(255) NULL,
+			provider VARCHAR(60) NULL,
+			model VARCHAR(120) NULL,
+			status VARCHAR(30) NOT NULL DEFAULT 'pending',
+			job_id BIGINT UNSIGNED NULL,
+			error TEXT NULL,
+			created_at DATETIME NOT NULL,
+			processed_at DATETIME NULL,
+			PRIMARY KEY  (id),
+			KEY batch_id (batch_id),
+			KEY status (status)
+		) $charset_collate;";
+
 		$sql[] = "CREATE TABLE {$prefix}vp_title_history (
 			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 			post_id BIGINT UNSIGNED NOT NULL,

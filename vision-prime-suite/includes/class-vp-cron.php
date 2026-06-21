@@ -17,6 +17,7 @@ class VP_Cron {
 	const EVENT_CALENDAR = 'vp_cron_run_calendar';
 	const EVENT_RANK_SNAPSHOT = 'vp_cron_rank_snapshot';
 	const EVENT_ANOMALY      = 'vp_cron_anomaly_check';
+	const EVENT_BULK_TITLES  = 'vp_cron_process_bulk_titles';
 
 	public function __construct() {
 		add_filter( 'cron_schedules', array( __CLASS__, 'add_intervals' ) );
@@ -27,6 +28,7 @@ class VP_Cron {
 		add_action( self::EVENT_CALENDAR, array( $this, 'run_calendar' ) );
 		add_action( self::EVENT_RANK_SNAPSHOT, array( $this, 'run_rank_snapshot' ) );
 		add_action( self::EVENT_ANOMALY, array( $this, 'run_anomaly_check' ) );
+		add_action( self::EVENT_BULK_TITLES, array( $this, 'run_bulk_titles' ) );
 	}
 
 	/**
@@ -53,10 +55,13 @@ class VP_Cron {
 		if ( ! wp_next_scheduled( self::EVENT_ANOMALY ) ) {
 			wp_schedule_event( time() + 600, 'daily', self::EVENT_ANOMALY );
 		}
+		if ( ! wp_next_scheduled( self::EVENT_BULK_TITLES ) ) {
+			wp_schedule_event( time() + 90, 'vp_five_minutes', self::EVENT_BULK_TITLES );
+		}
 	}
 
 	public static function clear_schedules() {
-		foreach ( array( self::EVENT_QUEUE, self::EVENT_SOCIAL, self::EVENT_DIGEST, self::EVENT_CALENDAR, self::EVENT_RANK_SNAPSHOT, self::EVENT_ANOMALY ) as $event ) {
+		foreach ( array( self::EVENT_QUEUE, self::EVENT_SOCIAL, self::EVENT_DIGEST, self::EVENT_CALENDAR, self::EVENT_RANK_SNAPSHOT, self::EVENT_ANOMALY, self::EVENT_BULK_TITLES ) as $event ) {
 			$timestamp = wp_next_scheduled( $event );
 			if ( $timestamp ) {
 				wp_unschedule_event( $timestamp, $event );
@@ -125,6 +130,12 @@ class VP_Cron {
 	public function run_anomaly_check() {
 		if ( class_exists( 'VP_Anomaly_Alerts' ) ) {
 			VP_Anomaly_Alerts::check_and_alert();
+		}
+	}
+
+	public function run_bulk_titles() {
+		if ( class_exists( 'VP_Content_Generator' ) ) {
+			VP_Content_Generator::process_bulk_batch();
 		}
 	}
 
