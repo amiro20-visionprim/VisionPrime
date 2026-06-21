@@ -40,6 +40,11 @@ class VPOS_Loader {
 		require_once VPOS_DIR . 'modules/customer/class-vpos-order-repository.php';
 		require_once VPOS_DIR . 'modules/customer/class-vpos-customer-rest.php';
 		require_once VPOS_DIR . 'modules/customer/class-vpos-customer-module.php';
+
+		// Phase 3 — Wallet Ledger Engine.
+		require_once VPOS_DIR . 'modules/wallet/class-vpos-wallet-repository.php';
+		require_once VPOS_DIR . 'modules/wallet/class-vpos-wallet-rest.php';
+		require_once VPOS_DIR . 'modules/wallet/class-vpos-wallet-module.php';
 	}
 
 	public function init_modules() {
@@ -48,6 +53,7 @@ class VPOS_Loader {
 
 		$this->register_module( 'tenant', new VPOS_Tenant_Module() );
 		$this->register_module( 'customer', new VPOS_Customer_Module() );
+		$this->register_module( 'wallet', new VPOS_Wallet_Module() );
 
 		if ( is_admin() ) {
 			$this->modules['admin'] = new VPOS_Admin();

@@ -43,6 +43,8 @@ if ( ! $customer ) {
 		<?php submit_button( __( 'Save Changes', 'vpos' ) ); ?>
 	</form>
 
+	<p><a href="<?php echo esc_url( admin_url( 'admin.php?page=vpos-wallet&customer_id=' . $customer['id'] ) ); ?>"><?php esc_html_e( 'View Wallet →', 'vpos' ); ?></a></p>
+
 	<h2><?php esc_html_e( 'Tags', 'vpos' ); ?></h2>
 	<p><?php echo $tags ? esc_html( implode( ', ', $tags ) ) : esc_html__( 'No tags.', 'vpos' ); ?></p>
 	<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">

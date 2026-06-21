@@ -32,8 +32,8 @@ Operating System. Independent of, and unrelated to, the VisionPrime Suite
 |---|---|
 | P0 (done) | Plugin skeleton, base layer, RBAC roles, audit log, admin shell |
 | P1 (done) | Organization/Brand/Branch, brand_settings, REST API, admin UI, tests |
-| P2 (this commit) | Customer Data Platform, Customer 360, Order Engine |
-| P3 | Wallet Ledger Engine |
+| P2 (done) | Customer Data Platform, Customer 360, Order Engine |
+| P3 (this commit) | Wallet Ledger Engine |
 | P4 | Loyalty, Rewards, Customer Club |
 | P5 | Segments, Campaigns, Notifications |
 | P6 | Automation Engine |
@@ -89,3 +89,25 @@ actions automatically, every list endpoint paginated.
   summing, order requires existing customer, completed order updates
   customer metrics, cancelling a completed order reverses those metrics,
   Customer 360 aggregation.
+
+## Phase 3 notes
+
+- Wallet Ledger Engine (`modules/wallet/`) uses the shared `VPOS_Ledger`
+  trait so `VPOS_Wallet_Repository` only adds wallet-specific rules on
+  top: no overdraft (`debit()` rejects if it would exceed the confirmed
+  balance), wallet-enabled gate (reads `brand_settings.wallet_enabled`),
+  and reversal entries can't themselves be reversed.
+- Order → Wallet integration is hook-based, not a direct dependency:
+  `VPOS_Wallet_Module` listens to `vpos_order_completed` (applies
+  cashback, rate from `brand_settings.settings.cashback_rate`, 0 =
+  disabled) and `vpos_order_cancelled` (reverses any cashback tied to
+  that order_id) — `VPOS_Order_Repository` never references Wallet.
+- Customer 360 gained a `wallet` section (`balance`, `recent_entries`)
+  via the same `vpos_customer_360` filter Phase 2 exposed for this.
+- REST: `GET /customers/{id}/wallet`, `POST .../wallet/{credit,debit}`,
+  `POST /wallet/entries/{id}/reverse`. wp-admin: **VisionPrime OS →
+  Wallet** (lookup by customer id), linked from each customer's 360 page.
+- Tests: `tests/wallet-test.php` — credit increases balance, debit can't
+  exceed balance, reversal writes an opposite entry instead of mutating,
+  a reversal can't itself be reversed, disabled wallet blocks credit,
+  order cashback is applied on completion and reversed on cancellation.
