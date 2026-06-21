@@ -1,0 +1,14 @@
+{
+  "name": "@visionprime/api-client",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "echo \"no tests yet for @visionprime/api-client\" && exit 0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

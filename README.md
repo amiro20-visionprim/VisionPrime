@@ -57,6 +57,27 @@ visionprime-os/
 > It is left untouched; the `visionprime-os/` structure above is scaffolded
 > separately as phases proceed.
 
+## How to Run Locally (Phase 01)
+
+```bash
+cd visionprime-os
+cp .env.example .env       # adjust DATABASE_URL/REDIS_URL if needed
+docker compose up -d       # starts PostgreSQL + Redis
+npm install
+
+npm run dev:api             # http://localhost:4000/api/health, /api/version
+npm run dev:admin            # http://localhost:3000  (Admin OS shell)
+npm run dev:club             # http://localhost:3001  (Customer Club)
+
+npm run test --workspaces --if-present
+```
+
+As of Phase 01, `apps/admin` and `apps/club` are placeholder shells with
+no real auth, and `apps/wordpress-plugin/visionprime-connector` is a
+bootstrap-only plugin file. See
+[`docs/phase-01-foundation.md`](docs/phase-01-foundation.md) for the
+full Phase 01 completion report.
+
 ## Documentation
 
 - [`docs/architecture.md`](docs/architecture.md) — product definition,
@@ -74,11 +95,15 @@ visionprime-os/
   completion checklists.
 - [`docs/development-workflow.md`](docs/development-workflow.md) — phase
   order, branching, review checklist, phase completion reporting.
+- [`docs/phase-01-foundation.md`](docs/phase-01-foundation.md) — Phase 01
+  completion report (monorepo skeleton, foundation infra, health/version
+  endpoints, base layouts).
 
 ## Phase Order
 
-1. **Phase 00 — Governance** (current): docs, conventions, DoD, workflow.
-2. Phase 01 — Foundation (packages skeletons, API bootstrap, auth).
+1. Phase 00 — Governance: docs, conventions, DoD, workflow. ✅
+2. **Phase 01 — Foundation** (current): monorepo skeleton, shared
+   packages, API bootstrap (health/version), base app shells. ✅
 3. Phase 02 — Customer 360.
 4. Phase 03 — Orders.
 5. Phase 04 — Wallet Ledger.

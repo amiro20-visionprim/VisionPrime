@@ -6,11 +6,18 @@ Development proceeds strictly in phases. Each phase builds on the
 previous one and must be completed (per `definition-of-done.md`) before
 the next phase begins.
 
-- **Phase 00 — Governance** (this phase): architecture, conventions,
+- **Phase 00 — Governance** ✅: architecture, conventions,
   permissions model, Definition of Done, workflow rules. No feature code.
-- **Phase 01 — Foundation**: `database` schema bootstrap, `shared`,
-  `config`, `permissions`, `audit`, `logger`, `validation`,
-  `api-client`, `ui` package skeletons; API app bootstrap with auth.
+- **Phase 01 — Foundation** ✅: monorepo skeleton (`apps/*`,
+  `packages/*`); `shared`, `config`, `logger`, `validation`,
+  `permissions`, `database`, `audit`, `jobs`, `integrations`,
+  `api-client`, `ui`, `admin-crud` package skeletons; `apps/api`
+  bootstrap (config loading, env validation, logger, global error
+  filter, response helper, request context, `/api/health`,
+  `/api/version`); `apps/admin`/`apps/club` base layouts and
+  placeholder pages (no real auth yet); `apps/wordpress-plugin`
+  bootstrap file; docker-compose (Postgres + Redis). See
+  `docs/phase-01-foundation.md`.
 - **Phase 02 — Customer 360**: customer entity, profile views, basic
   CRUD.
 - **Phase 03 — Orders**: order entity, WooCommerce order sync

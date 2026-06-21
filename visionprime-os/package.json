@@ -1,0 +1,22 @@
+{
+  "name": "visionprime-os",
+  "version": "0.1.0",
+  "private": true,
+  "description": "VisionPrime OS — single-business customer operating system",
+  "workspaces": [
+    "apps/api",
+    "apps/admin",
+    "apps/club",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:admin": "npm run dev --workspace=apps/admin",
+    "dev:club": "npm run dev --workspace=apps/club",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
