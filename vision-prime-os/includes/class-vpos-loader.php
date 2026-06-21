@@ -53,6 +53,13 @@ class VPOS_Loader {
 		require_once VPOS_DIR . 'modules/loyalty/class-vpos-loyalty-module.php';
 		require_once VPOS_DIR . 'modules/club/class-vpos-club-session.php';
 		require_once VPOS_DIR . 'modules/club/class-vpos-club-module.php';
+
+		// Phase 5 — Segments, Campaigns, Notifications.
+		require_once VPOS_DIR . 'modules/campaign/class-vpos-segment-repository.php';
+		require_once VPOS_DIR . 'modules/campaign/class-vpos-notification-repository.php';
+		require_once VPOS_DIR . 'modules/campaign/class-vpos-campaign-repository.php';
+		require_once VPOS_DIR . 'modules/campaign/class-vpos-campaign-rest.php';
+		require_once VPOS_DIR . 'modules/campaign/class-vpos-campaign-module.php';
 	}
 
 	public function init_modules() {
@@ -64,6 +71,7 @@ class VPOS_Loader {
 		$this->register_module( 'wallet', new VPOS_Wallet_Module() );
 		$this->register_module( 'loyalty', new VPOS_Loyalty_Module() );
 		$this->register_module( 'club', new VPOS_Club_Module() );
+		$this->register_module( 'campaign', new VPOS_Campaign_Module() );
 
 		if ( is_admin() ) {
 			$this->modules['admin'] = new VPOS_Admin();

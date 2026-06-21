@@ -34,8 +34,8 @@ Operating System. Independent of, and unrelated to, the VisionPrime Suite
 | P1 (done) | Organization/Brand/Branch, brand_settings, REST API, admin UI, tests |
 | P2 (done) | Customer Data Platform, Customer 360, Order Engine |
 | P3 (done) | Wallet Ledger Engine |
-| P4 (this commit) | Loyalty, Rewards, Customer Club |
-| P5 | Segments, Campaigns, Notifications |
+| P4 (done) | Loyalty, Rewards, Customer Club |
+| P5 (this commit) | Segments, Campaigns, Notifications |
 | P6 | Automation Engine |
 | P7 | Integrations, Reports, AI Intelligence Layer |
 
@@ -148,3 +148,38 @@ actions automatically, every list endpoint paginated.
   redemption fails when points are insufficient, out-of-stock rewards are
   rejected, completed-order points are reversed on cancellation, Customer
   Club OTP login creates a customer + session, wrong OTP code is rejected.
+
+## Phase 5 notes
+
+- Segments (`modules/campaign/class-vpos-segment-repository.php`) are a
+  saved rule set evaluated live against `vpos_customers` on every read —
+  there is no materialized membership table, so a segment's matches are
+  always current, never stale snapshots. Supported rule keys: `status`,
+  `tags[]`, `min_purchase_count`, `min_total_spent`, `min_lifetime_value`,
+  `created_after`/`created_before`.
+- Campaigns (`class-vpos-campaign-repository.php`) target a segment (or
+  all customers when none is set) and, on send, queue one Notification per
+  matching customer — `send_now()` never delivers anything itself.
+  `schedule()` hands off to `VPOS_Jobs::enqueue_at()`, and the module's
+  `vpos_job_send_campaign` handler is what actually fires `send_now()` at
+  the scheduled time.
+- Notifications (`class-vpos-notification-repository.php`) are a generic
+  per-customer message log shared by Campaigns now and Automation later —
+  `queue()` only records intent and fires `vpos_notification_dispatch` for
+  the real SMS/email/push gateway (Phase 7 integrations layer) to consume;
+  `mark_read()` is scoped to the owning customer_id so one customer can't
+  mark another's notification read.
+- Customer 360 gained a `notifications` section (`unread_count`, `recent`)
+  via the same `vpos_customer_360` filter as every prior phase.
+- REST: `GET|POST /segments`, `GET|PATCH /segments/{id}`,
+  `GET /segments/{id}/customers`, `GET|POST /campaigns`,
+  `GET|PATCH /campaigns/{id}`, `POST /campaigns/{id}/{schedule,send,cancel}`,
+  `GET /campaigns/{id}/sends`, `GET /customers/{id}/notifications`,
+  `POST /notifications/{id}/read`. wp-admin: **VisionPrime OS → Segments /
+  Segment / Campaigns / Campaign**.
+- Tests: `tests/campaign-test.php` — segment resolves customers by spend
+  rule, segment resolves customers by tag, sending a campaign queues one
+  notification per segment match, an already-sent campaign can't be sent
+  again, a cancelled campaign can't be sent, scheduling enqueues a
+  background job, marking a notification read is scoped to its owning
+  customer, Customer 360 includes the notifications section.
