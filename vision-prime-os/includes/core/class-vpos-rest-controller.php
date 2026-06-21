@@ -47,6 +47,13 @@ abstract class VPOS_REST_Controller {
 					array( 'field' => $field )
 				);
 			}
+			if ( null !== $value && '' !== $value && isset( $rules['enum'] ) && ! in_array( $value, $rules['enum'], true ) ) {
+				return new WP_Error(
+					VPOS_Response::ERROR_VALIDATION,
+					sprintf( '%s must be one of: %s.', $field, implode( ', ', $rules['enum'] ) ),
+					array( 'field' => $field )
+				);
+			}
 		}
 		return true;
 	}

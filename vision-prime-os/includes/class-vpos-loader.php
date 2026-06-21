@@ -25,23 +25,30 @@ class VPOS_Loader {
 		require_once VPOS_DIR . 'includes/core/trait-vpos-ledger.php';
 
 		require_once VPOS_DIR . 'includes/class-vpos-activator.php';
-
-		// Admin shell (Phase 0). Feature modules register themselves from
-		// Phase 1 onward via vpos_register_modules.
 		require_once VPOS_DIR . 'admin/class-vpos-admin.php';
+
+		// Phase 1 — Tenant (Organization/Brand/Branch/Brand Settings).
+		require_once VPOS_DIR . 'modules/tenant/class-vpos-organization-repository.php';
+		require_once VPOS_DIR . 'modules/tenant/class-vpos-brand-settings-repository.php';
+		require_once VPOS_DIR . 'modules/tenant/class-vpos-brand-repository.php';
+		require_once VPOS_DIR . 'modules/tenant/class-vpos-branch-repository.php';
+		require_once VPOS_DIR . 'modules/tenant/class-vpos-tenant-rest.php';
+		require_once VPOS_DIR . 'modules/tenant/class-vpos-tenant-module.php';
 	}
 
 	public function init_modules() {
 		VPOS_RBAC::instance()->register_capabilities();
 		VPOS_Jobs::instance()->register_hooks();
 
+		$this->register_module( 'tenant', new VPOS_Tenant_Module() );
+
 		if ( is_admin() ) {
 			$this->modules['admin'] = new VPOS_Admin();
 		}
 
 		/**
-		 * Feature modules (Tenant, Customer, Wallet, ...) hook in here as
-		 * each phase is built, keeping this file stable across phases.
+		 * Later-phase modules (Customer, Wallet, Loyalty, ...) hook in here,
+		 * keeping this file stable across phases.
 		 */
 		do_action( 'vpos_register_modules', $this );
 	}

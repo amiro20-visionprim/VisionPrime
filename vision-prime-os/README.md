@@ -30,8 +30,8 @@ Operating System. Independent of, and unrelated to, the VisionPrime Suite
 
 | Phase | Scope |
 |---|---|
-| P0 (this commit) | Plugin skeleton, base layer, RBAC roles, audit log, admin shell |
-| P1 | Organization/Brand/Branch, brand_settings, full role/permission set |
+| P0 (done) | Plugin skeleton, base layer, RBAC roles, audit log, admin shell |
+| P1 (this commit) | Organization/Brand/Branch, brand_settings, REST API, admin UI, tests |
 | P2 | Customer Data Platform, Customer 360, Order Engine |
 | P3 | Wallet Ledger Engine |
 | P4 | Loyalty, Rewards, Customer Club |
@@ -43,3 +43,21 @@ Standing rules (non-negotiable across all phases): no direct wallet balance
 mutation, no cross-brand data access, soft delete for business-critical
 records, audit log for sensitive actions, AI never executes financial
 actions automatically, every list endpoint paginated.
+
+## Phase 1 notes
+
+- Creating a Brand provisions a new Multisite site (`wpmu_create_blog`),
+  runs the schema on it, and creates its default `brand_settings` row —
+  all in one call (`VPOS_Brand_Repository::create_brand`).
+- Without Multisite enabled, exactly one brand can exist, bound to the
+  current site (development/single-brand fallback).
+- REST API: `wp-json/visionprime/v1/admin/{organizations,brands,branches}`
+  per Master Spec §11. Branch/Settings endpoints accept a brand id and
+  internally `switch_to_blog()` to that brand's site; non-super-admins are
+  rejected unless the brand id matches their own site.
+- wp-admin UI lives under **VisionPrime OS → Organizations / Brands /
+  Brand Settings / Branches** (Organizations and Brands management is
+  network-oversight, shown on the main site only; Brand Settings and
+  Branches are managed from each brand's own site).
+- Tests: `tests/tenant-test.php` (run with `phpunit`, requires the WP
+  Multisite test suite — see `tests/bootstrap.php`).

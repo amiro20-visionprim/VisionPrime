@@ -17,8 +17,8 @@ class VPOS_RBAC {
 	/** @var array<string,string[]> role => permissions */
 	private $role_permissions = array(
 		'vpos_super_admin'      => array( '*' ),
-		'vpos_brand_owner'      => array( 'brand:update', 'brand:settings:update', 'customer:*', 'order:*', 'wallet:*', 'loyalty:*', 'reward:*', 'campaign:*', 'automation:*', 'finance:*', 'report:*', 'integration:manage', 'audit:view', 'settings:manage' ),
-		'vpos_brand_admin'      => array( 'customer:*', 'order:*', 'wallet:view', 'loyalty:*', 'reward:*', 'campaign:*', 'automation:*', 'report:view', 'audit:view' ),
+		'vpos_brand_owner'      => array( 'brand:view', 'brand:update', 'brand:settings:update', 'branch:view', 'branch:create', 'branch:update', 'customer:*', 'order:*', 'wallet:*', 'loyalty:*', 'reward:*', 'campaign:*', 'automation:*', 'finance:*', 'report:*', 'integration:manage', 'audit:view', 'settings:manage' ),
+		'vpos_brand_admin'      => array( 'brand:view', 'brand:settings:update', 'branch:view', 'branch:create', 'branch:update', 'customer:*', 'order:*', 'wallet:view', 'loyalty:*', 'reward:*', 'campaign:*', 'automation:*', 'report:view', 'audit:view' ),
 		'vpos_crm_manager'      => array( 'customer:*', 'segment:*', 'campaign:view', 'report:view' ),
 		'vpos_marketing_manager' => array( 'campaign:*', 'segment:*', 'automation:*', 'report:view' ),
 		'vpos_finance_manager'  => array( 'wallet:view', 'wallet:adjust', 'wallet:reverse', 'wallet:export', 'finance:*', 'report:view' ),

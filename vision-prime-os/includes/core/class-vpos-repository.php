@@ -13,9 +13,11 @@ abstract class VPOS_Repository {
 	protected $table;
 	protected $soft_deletable = true;
 	protected $branch_scoped  = false;
+	/** @var bool true for network-level tables (Organization/Brand registry) */
+	protected $network = false;
 
 	protected function table_name() {
-		return VPOS_Migrator::table( $this->table );
+		return VPOS_Migrator::table( $this->table, $this->network );
 	}
 
 	public function find( $id ) {
