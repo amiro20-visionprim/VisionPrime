@@ -409,5 +409,14 @@
 				$('#vp-gsc-result').html('<p class="vp-error">خطای ارتباط با سرور.</p>');
 			}).always(function () { $btn.prop('disabled', false); });
 		});
+
+		// --- Show/hide toggle for sensitive fields (defeats browser password-manager autofill confusion) ---
+		$(document).on('click', '.vp-toggle-visibility', function () {
+			var $field = $('#' + $(this).data('target'));
+			if (!$field.length) return;
+			var isHidden = $field.attr('type') === 'password';
+			$field.attr('type', isHidden ? 'text' : 'password');
+			$(this).text(isHidden ? 'پنهان' : 'نمایش');
+		});
 	});
 })(jQuery);

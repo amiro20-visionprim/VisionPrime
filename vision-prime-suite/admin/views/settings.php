@@ -86,7 +86,10 @@
 				<tr>
 					<th><label>GSC Client Secret</label></th>
 					<td>
-						<input type="password" name="gsc_client_secret" class="large-text" dir="ltr" value="<?php echo esc_attr( $settings['gsc_client_secret'] ); ?>">
+						<span style="display:inline-flex;align-items:center;gap:6px;width:100%;">
+							<input type="password" name="gsc_client_secret" class="large-text" dir="ltr" autocomplete="new-password" id="vp-gsc-secret-field" value="<?php echo esc_attr( $settings['gsc_client_secret'] ); ?>">
+							<button type="button" class="button vp-toggle-visibility" data-target="vp-gsc-secret-field">نمایش</button>
+						</span>
 						<p class="description">از <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud Console</a> یک OAuth Client بسازید و این آدرس را به‌عنوان redirect URI اضافه کنید: <code style="direction:ltr;"><?php echo esc_html( admin_url( 'admin.php?page=vp-suite-search-console' ) ); ?></code></p>
 					</td>
 				</tr>
@@ -123,7 +126,13 @@
 					</td>
 				</tr>
 				<tr><th><label>برچسب</label></th><td><input type="text" name="label" class="regular-text" required></td></tr>
-				<tr><th><label>کلید API</label></th><td><input type="password" name="api_key" class="regular-text" required></td></tr>
+				<tr><th><label>کلید API</label></th><td>
+						<span style="display:inline-flex;align-items:center;gap:6px;">
+							<input type="password" name="api_key" class="regular-text" dir="ltr" autocomplete="new-password" id="vp-api-key-field" required>
+							<button type="button" class="button vp-toggle-visibility" data-target="vp-api-key-field">نمایش</button>
+						</span>
+						<p class="description">این فیلد توسط مدیریت کلمه‌عبور مرورگر پر نمی‌شود؛ مقدار کلید را مستقیماً اینجا وارد یا پیست کنید.</p>
+					</td></tr>
 				<tr>
 					<th><label>اولویت</label></th>
 					<td>
