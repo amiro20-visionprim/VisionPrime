@@ -1,0 +1,69 @@
+.vpos-help-wrap {
+	direction: rtl;
+	text-align: right;
+}
+.vpos-help-wrap .vpos-help-group {
+	margin-top: 28px;
+	padding-bottom: 6px;
+	border-bottom: 2px solid #1d3557;
+	color: #1d3557;
+}
+.vpos-help-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+	gap: 16px;
+	margin-top: 12px;
+}
+.vpos-help-card {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-right: 4px solid #1d3557;
+	border-radius: 6px;
+	padding: 16px;
+	display: flex;
+	flex-direction: column;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.vpos-help-card__head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+.vpos-help-card__head .dashicons {
+	font-size: 24px;
+	width: 24px;
+	height: 24px;
+	color: #1d3557;
+}
+.vpos-help-card__head h3 {
+	margin: 0;
+	font-size: 15px;
+}
+.vpos-help-card__desc {
+	color: #3c434a;
+	margin-bottom: 8px;
+}
+.vpos-help-card__steps {
+	margin: 0 0 12px;
+	padding-right: 20px;
+	flex-grow: 1;
+}
+.vpos-help-card__steps li {
+	margin-bottom: 4px;
+	font-size: 13px;
+}
+.vpos-help-card__footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-top: auto;
+}
+.vpos-help-card__perm {
+	font-size: 11px;
+	background: #f0f0f1;
+	padding: 2px 6px;
+	border-radius: 3px;
+	color: #50575e;
+}

@@ -25,6 +25,13 @@ Operating System. Independent of, and unrelated to, the VisionPrime Suite
   - `VPOS_Jobs` — Action Scheduler wrapper (WP-Cron fallback) for background work.
 - **Customer Club**: server-rendered WordPress front end (shortcodes/templates),
   not a separate SPA.
+- **Operator training**: `modules/help/` adds a **VisionPrime OS → آموزش و
+  راهنما** submenu — a graphical, Persian-language catalog explaining what
+  every other submenu does and how an operator is meant to use it. It is
+  pure presentation (no table, no REST route), grouped by onboarding order
+  (tenant → customer/order → wallet/loyalty → outreach → automation/
+  integrations → reports/AI), and each card names the permission required
+  to act on it.
 
 ## Phases
 

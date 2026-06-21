@@ -76,6 +76,8 @@ class VPOS_Loader {
 		require_once VPOS_DIR . 'modules/ai/class-vpos-ai-repository.php';
 		require_once VPOS_DIR . 'modules/ai/class-vpos-ai-rest.php';
 		require_once VPOS_DIR . 'modules/ai/class-vpos-ai-module.php';
+
+		require_once VPOS_DIR . 'modules/help/class-vpos-help-module.php';
 	}
 
 	public function init_modules() {
@@ -92,6 +94,7 @@ class VPOS_Loader {
 		$this->register_module( 'integration', new VPOS_Integration_Module() );
 		$this->register_module( 'report', new VPOS_Report_Module() );
 		$this->register_module( 'ai', new VPOS_Ai_Module() );
+		$this->register_module( 'help', new VPOS_Help_Module() );
 
 		if ( is_admin() ) {
 			$this->modules['admin'] = new VPOS_Admin();
