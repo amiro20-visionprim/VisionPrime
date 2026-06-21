@@ -1,0 +1,7 @@
+# Compiled output (tsc emits to <package>/dist, never alongside src)
+dist/
+*.tsbuildinfo
+
+# Stray compiled artifacts if a misconfigured build ever emits beside source
+src/**/*.js
+src/**/*.d.ts
