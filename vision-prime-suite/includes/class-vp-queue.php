@@ -139,11 +139,10 @@ class VP_Queue {
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		require_once ABSPATH . 'wp-admin/includes/image.php';
 
-		$provider = $job->provider ?: 'openrouter';
-		$model    = $job->model ?: '';
-		$prompt   = sprintf( 'A unique, high quality featured image for an article titled "%s".', $job->title );
+		$model  = $job->model ?: '';
+		$prompt = sprintf( 'A unique, high quality featured image for an article titled "%s".', $job->title );
 
-		$image = VP_Image_Generator::generate( $prompt, $provider, $model );
+		$image = VP_Image_Generator::generate( $prompt, $model );
 		if ( is_wp_error( $image ) ) {
 			VP_Logger::log( 'queue', "تولید خودکار تصویر شاخص برای پست #$post_id ناموفق: " . $image->get_error_message(), 'error' );
 			return;

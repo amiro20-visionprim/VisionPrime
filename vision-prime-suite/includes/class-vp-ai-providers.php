@@ -4,11 +4,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Registry of supported AI providers/models. OpenRouter is treated as a
- * single gateway that exposes many underlying models, so switching models
- * for OpenRouter is just a dropdown — no separate key per model needed.
- * Direct provider integrations are kept for holdings that prefer to bypass
- * OpenRouter for a specific vendor.
+ * Registry of supported AI providers/models. This plugin is built around a
+ * single gateway — OpenRouter — whose keys always look like "sk-or-v1-...".
+ * One key unlocks every underlying model (OpenAI, Anthropic, Google, Meta,
+ * Mistral, DeepSeek, ...), so there is no "pick the right provider for your
+ * key format" step left for the operator to get wrong.
  */
 class VP_AI_Providers {
 
@@ -19,6 +19,7 @@ class VP_AI_Providers {
 				'endpoint'     => 'https://openrouter.ai/api/v1/chat/completions',
 				'auth_header'  => 'Authorization',
 				'auth_prefix'  => 'Bearer ',
+				'key_prefix'   => 'sk-or-',
 				'models'       => array(
 					'openai/gpt-4o',
 					'openai/gpt-4o-mini',
@@ -42,46 +43,18 @@ class VP_AI_Providers {
 					'google/imagen-3',
 				),
 			),
-			'openai'      => array(
-				'label'       => 'OpenAI (Direct)',
-				'endpoint'    => 'https://api.openai.com/v1/chat/completions',
-				'auth_header' => 'Authorization',
-				'auth_prefix' => 'Bearer ',
-				'models'      => array( 'gpt-4o', 'gpt-4o-mini' ),
-				'image_models' => array( 'dall-e-3' ),
-			),
-			'anthropic'   => array(
-				'label'       => 'Anthropic (Direct)',
-				'endpoint'    => 'https://api.anthropic.com/v1/messages',
-				'auth_header' => 'x-api-key',
-				'auth_prefix' => '',
-				// Anthropic's "-latest" aliases always resolve to the newest
-				// snapshot of that model line, so this list never goes stale.
-				'models'      => array( 'claude-3-7-sonnet-latest', 'claude-3-5-haiku-latest' ),
-				'image_models' => array(),
-			),
-			'google'      => array(
-				'label'       => 'Google Gemini (Direct)',
-				'endpoint'    => 'https://generativelanguage.googleapis.com/v1beta/models',
-				'auth_header' => 'x-goog-api-key',
-				'auth_prefix' => '',
-				'models'      => array( 'gemini-2.0-flash', 'gemini-1.5-pro' ),
-				'image_models' => array( 'imagen-3' ),
-			),
-			'stability'   => array(
-				'label'       => 'Stability AI (Direct - Images)',
-				'endpoint'    => 'https://api.stability.ai/v2beta/stable-image/generate/sd3',
-				'auth_header' => 'Authorization',
-				'auth_prefix' => 'Bearer ',
-				'models'      => array(),
-				'image_models' => array( 'sd3', 'sdxl' ),
-			),
 		);
 	}
 
-	public static function get_provider( $key ) {
-		$providers = self::get_providers();
-		return isset( $providers[ $key ] ) ? $providers[ $key ] : null;
+	/**
+	 * The $key argument is accepted only for call-site backward
+	 * compatibility (older settings may still hold a stale provider name
+	 * like "openai" from before the OpenRouter-only redesign); since
+	 * OpenRouter is the only gateway this plugin talks to, it's always what
+	 * gets returned.
+	 */
+	public static function get_provider( $key = 'openrouter' ) {
+		return self::get_providers()['openrouter'];
 	}
 
 	public static function all_models() {

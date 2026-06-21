@@ -119,8 +119,7 @@ class VP_Network_Admin {
 			$result = $this->push_shared_key();
 		}
 
-		$providers = VP_AI_Providers::get_providers();
-		$sites     = get_sites( array( 'fields' => 'ids' ) );
+		$sites = get_sites( array( 'fields' => 'ids' ) );
 
 		include VP_SUITE_DIR . 'admin/views/network-settings.php';
 	}
@@ -131,12 +130,15 @@ class VP_Network_Admin {
 	 * @return array{count:int} Number of sites updated.
 	 */
 	private function push_shared_key() {
-		$provider = sanitize_key( $_POST['provider'] ?? '' );
-		$label    = sanitize_text_field( $_POST['label'] ?? '' );
-		$api_key  = sanitize_text_field( $_POST['api_key'] ?? '' );
+		$label   = sanitize_text_field( $_POST['label'] ?? '' );
+		$api_key = sanitize_text_field( $_POST['api_key'] ?? '' );
 
-		if ( empty( $provider ) || empty( $api_key ) ) {
-			return array( 'count' => 0, 'error' => __( 'سرویس و کلید API را وارد کنید.', 'vp-suite' ) );
+		if ( empty( $api_key ) ) {
+			return array( 'count' => 0, 'error' => __( 'کلید API را وارد کنید.', 'vp-suite' ) );
+		}
+
+		if ( ! VP_Api_Manager::is_valid_key_format( $api_key ) ) {
+			return array( 'count' => 0, 'error' => __( 'این مقدار فرمت یک کلید OpenRouter معتبر را ندارد (باید با sk-or- شروع شود).', 'vp-suite' ) );
 		}
 
 		$site_ids = get_sites( array( 'fields' => 'ids' ) );
@@ -144,9 +146,9 @@ class VP_Network_Admin {
 
 		foreach ( $site_ids as $site_id ) {
 			switch_to_blog( $site_id );
-			VP_Api_Manager::save_key( $provider, 'shared', $label ?: __( 'کلید مشترک شبکه', 'vp-suite' ), $api_key );
+			VP_Api_Manager::save_key( 'shared', $label ?: __( 'کلید مشترک شبکه', 'vp-suite' ), $api_key );
 			VP_Settings::update( 'shared_api_mode', true );
-			VP_Logger::log( 'network_admin', "کلید مشترک $provider از طریق تنظیمات شبکه روی این سایت اعمال شد.", 'info' );
+			VP_Logger::log( 'network_admin', 'کلید مشترک از طریق تنظیمات شبکه روی این سایت اعمال شد.', 'info' );
 			restore_current_blog();
 			$count++;
 		}

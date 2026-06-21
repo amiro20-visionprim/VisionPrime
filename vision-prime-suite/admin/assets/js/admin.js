@@ -6,39 +6,18 @@
 	}
 
 	$(function () {
-		// --- Generate page: dynamic model list per provider ---
-		var $providerSelect = $('#vp-provider');
-		var $modelSelect = $('#vp-model');
-
-		function refreshModels() {
-			if (!window.VPProviders || !$providerSelect.length) return;
-			var provider = window.VPProviders[$providerSelect.val()];
-			$modelSelect.empty();
-			if (provider && provider.models) {
-				provider.models.forEach(function (m) {
-					$modelSelect.append($('<option>').val(m).text(m));
-				});
-			}
-		}
-		$providerSelect.on('change', refreshModels);
-		refreshModels();
-
-		// --- Bulk titles form: same provider->model behavior, separate ids ---
-		var $bulkProviderSelect = $('#vp-bulk-provider');
-		var $bulkModelSelect = $('#vp-bulk-model');
-
-		function refreshBulkModels() {
-			if (!window.VPProviders || !$bulkProviderSelect.length) return;
-			var provider = window.VPProviders[$bulkProviderSelect.val()];
-			$bulkModelSelect.empty();
-			if (provider && provider.models) {
-				provider.models.forEach(function (m) {
-					$bulkModelSelect.append($('<option>').val(m).text(m));
-				});
-			}
-		}
-		$bulkProviderSelect.on('change', refreshBulkModels);
-		refreshBulkModels();
+		// --- Tabbed pages (settings, generate, etc.) ---
+		$(document).on('click', '.vp-tab-btn', function () {
+			var $btn = $(this);
+			var tab = $btn.data('tab');
+			var $nav = $btn.closest('.vp-tabs');
+			var $panels = $nav.siblings('.vp-tab-panel').add($nav.parent().find('.vp-tab-panel'));
+			$nav.find('.vp-tab-btn').removeClass('vp-tab-active');
+			$btn.addClass('vp-tab-active');
+			$panels.each(function () {
+				$(this).prop('hidden', $(this).data('tab') !== tab);
+			});
+		});
 
 		function bulkStatusLabel(s) {
 			return { pending: 'در انتظار', done: 'انجام‌شده', failed: 'ناموفق' }[s] || s;

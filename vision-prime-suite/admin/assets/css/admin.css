@@ -195,3 +195,102 @@
 
 .vp-suite-wrap a { color: var(--vp-cyan); }
 .vp-suite-wrap h3 { border-bottom: 1px solid var(--vp-border); padding-bottom: 8px; }
+
+/* ===================== Tabs ===================== */
+.vp-tabs {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 20px;
+	padding-bottom: 14px;
+	border-bottom: 1px solid var(--vp-border);
+}
+.vp-tab-btn {
+	padding: 9px 18px;
+	border-radius: 999px;
+	border: 1px solid var(--vp-border);
+	background: rgba(255,255,255,0.04);
+	color: var(--vp-text-dim);
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+.vp-tab-btn:hover {
+	border-color: var(--vp-cyan);
+	color: var(--vp-cyan);
+}
+.vp-tab-btn.vp-tab-active {
+	background: linear-gradient(90deg, var(--vp-cyan), var(--vp-purple));
+	border-color: transparent;
+	color: #06101f;
+	box-shadow: 0 0 14px rgba(34, 211, 238, 0.35);
+}
+.vp-tab-panel {
+	animation: vp-fade-up 0.3s ease both;
+}
+
+/* ===================== Toggle switch ===================== */
+.vp-switch {
+	position: relative;
+	display: inline-block;
+	width: 44px;
+	height: 24px;
+	flex-shrink: 0;
+	cursor: pointer;
+}
+.vp-switch input {
+	opacity: 0;
+	width: 0;
+	height: 0;
+}
+.vp-switch-slider {
+	position: absolute;
+	inset: 0;
+	background: var(--vp-navy);
+	border: 1px solid var(--vp-border);
+	border-radius: 999px;
+	transition: all 0.2s ease;
+}
+.vp-switch-slider::before {
+	content: '';
+	position: absolute;
+	height: 16px;
+	width: 16px;
+	right: 3px;
+	top: 3px;
+	background: var(--vp-text-dim);
+	border-radius: 50%;
+	transition: all 0.2s ease;
+}
+.vp-switch input:checked + .vp-switch-slider {
+	background: linear-gradient(90deg, var(--vp-cyan), var(--vp-purple));
+	border-color: transparent;
+}
+.vp-switch input:checked + .vp-switch-slider::before {
+	right: 23px;
+	background: #06101f;
+}
+.vp-switch input:focus-visible + .vp-switch-slider {
+	box-shadow: 0 0 0 2px var(--vp-cyan);
+}
+
+/* ===================== Toggle grid ===================== */
+.vp-toggle-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 14px;
+}
+.vp-toggle-row {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	padding: 14px;
+	background: rgba(255,255,255,0.03);
+	border: 1px solid var(--vp-border);
+	border-radius: 10px;
+	transition: border-color 0.2s ease;
+}
+.vp-toggle-row:hover { border-color: var(--vp-cyan); }
+.vp-toggle-row strong { display: block; color: var(--vp-text); font-size: 13px; margin-bottom: 4px; }
+.vp-toggle-row .description { margin: 0; font-size: 12px; }

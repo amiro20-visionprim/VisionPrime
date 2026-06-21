@@ -25,11 +25,10 @@ class VP_Image_Generator {
 			wp_send_json_error( array( 'message' => __( 'تولید تصویر در تنظیمات غیرفعال است.', 'vp-suite' ) ) );
 		}
 
-		$prompt    = sanitize_text_field( $_POST['prompt'] ?? '' );
-		$provider  = sanitize_key( $_POST['provider'] ?? 'openrouter' );
-		$model     = sanitize_text_field( $_POST['model'] ?? '' );
+		$prompt = sanitize_text_field( $_POST['prompt'] ?? '' );
+		$model  = sanitize_text_field( $_POST['model'] ?? '' );
 
-		$result = self::generate( $prompt, $provider, $model );
+		$result = self::generate( $prompt, $model );
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
@@ -38,25 +37,19 @@ class VP_Image_Generator {
 		wp_send_json_success( $result );
 	}
 
-	public static function generate( $prompt, $provider, $model ) {
-		$config = VP_AI_Providers::get_provider( $provider );
-		if ( ! $config || empty( $config['image_models'] ) ) {
+	public static function generate( $prompt, $model ) {
+		$config = VP_AI_Providers::get_provider();
+		if ( empty( $config['image_models'] ) ) {
 			return new WP_Error( 'vp_no_image_model', __( 'این سرویس از تولید تصویر پشتیبانی نمی‌کند.', 'vp-suite' ) );
 		}
 
-		$key = VP_Api_Manager::get_key( $provider, 'image' );
+		$key = VP_Api_Manager::get_key( 'image' );
 		if ( empty( $key ) ) {
 			return new WP_Error( 'vp_missing_key', __( 'کلید API تصویر ثبت نشده است.', 'vp-suite' ) );
 		}
 
-		// Image endpoints vary per vendor; OpenRouter/OpenAI share the
-		// /images/generations contract used here as the common path.
-		$endpoint = ( 'openrouter' === $provider )
-			? 'https://openrouter.ai/api/v1/images/generations'
-			: 'https://api.openai.com/v1/images/generations';
-
 		$response = wp_remote_post(
-			$endpoint,
+			'https://openrouter.ai/api/v1/images/generations',
 			array(
 				'headers' => array(
 					'Authorization' => 'Bearer ' . $key,
@@ -86,7 +79,7 @@ class VP_Image_Generator {
 			return new WP_Error( 'vp_image_failed', __( 'تولید تصویر ناموفق بود.', 'vp-suite' ) );
 		}
 
-		VP_Logger::log( 'image_generator', 'تصویر یونیک تولید شد.', 'info', array( 'provider' => $provider ) );
+		VP_Logger::log( 'image_generator', 'تصویر یونیک تولید شد.', 'info' );
 
 		return array( 'url' => $url );
 	}

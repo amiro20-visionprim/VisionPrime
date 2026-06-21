@@ -20,8 +20,7 @@ class VP_Admin {
 
 		add_menu_page( 'VisionPrime Suite', 'VisionPrime', $cap, 'vp-suite', array( $this, 'render_dashboard' ), 'dashicons-admin-customizer', 58 );
 		add_submenu_page( 'vp-suite', 'داشبورد', 'داشبورد', $cap, 'vp-suite', array( $this, 'render_dashboard' ) );
-		add_submenu_page( 'vp-suite', 'تولید محتوا', 'تولید محتوا', 'edit_posts', 'vp-suite-generate', array( $this, 'render_generate' ) );
-		add_submenu_page( 'vp-suite', 'صف انتشار', 'صف انتشار', 'edit_posts', 'vp-suite-queue', array( $this, 'render_queue' ) );
+		add_submenu_page( 'vp-suite', 'تولید محتوا و صف انتشار', 'تولید محتوا', 'edit_posts', 'vp-suite-generate', array( $this, 'render_generate' ) );
 		add_submenu_page( 'vp-suite', 'تقویم محتوایی', 'تقویم محتوایی', 'edit_posts', 'vp-suite-calendar', array( $this, 'render_calendar' ) );
 		add_submenu_page( 'vp-suite', 'تحلیل رقبا', 'تحلیل رقبا', 'edit_posts', 'vp-suite-competitor', array( $this, 'render_competitor' ) );
 		add_submenu_page( 'vp-suite', 'سرچ کنسول (شکار پوزیشن)', 'سرچ کنسول', $cap, 'vp-suite-search-console', array( $this, 'render_search_console' ) );
@@ -70,11 +69,14 @@ class VP_Admin {
 	}
 
 	public function render_generate() {
-		$this->view( 'generate', array( 'providers' => VP_AI_Providers::get_providers(), 'settings' => VP_Settings::all() ) );
-	}
-
-	public function render_queue() {
-		$this->view( 'queue', array( 'jobs' => VP_Queue::get_jobs() ) );
+		$this->view(
+			'generate',
+			array(
+				'models'   => VP_AI_Providers::get_provider()['models'],
+				'settings' => VP_Settings::all(),
+				'jobs'     => VP_Queue::get_jobs(),
+			)
+		);
 	}
 
 	public function render_calendar() {
@@ -239,28 +241,16 @@ class VP_Admin {
 			return;
 		}
 
-		$submitted_provider = sanitize_key( $_POST['provider'] ?? '' );
-		$api_key             = sanitize_text_field( $_POST['api_key'] ?? '' );
-		$detected_provider   = VP_Api_Manager::detect_provider_from_key( $api_key );
-		$provider            = $detected_provider ?: $submitted_provider;
+		$api_key = sanitize_text_field( $_POST['api_key'] ?? '' );
 
-		if ( $detected_provider && $detected_provider !== $submitted_provider ) {
-			add_action( 'admin_notices', function () use ( $submitted_provider, $detected_provider ) {
-				printf(
-					'<div class="notice notice-warning"><p>%s</p></div>',
-					esc_html(
-						sprintf(
-							__( 'این کلید با فرمت سرویس «%2$s» مطابقت دارد، نه «%1$s» که انتخاب کرده بودید. سرویس به‌صورت خودکار به «%2$s» تصحیح شد تا کلید واقعاً کار کند.', 'vp-suite' ),
-							$submitted_provider,
-							$detected_provider
-						)
-					)
-				);
+		if ( ! VP_Api_Manager::is_valid_key_format( $api_key ) ) {
+			add_action( 'admin_notices', function () {
+				echo '<div class="notice notice-error"><p>این مقدار فرمت یک کلید OpenRouter معتبر را ندارد؛ کلید باید با <code>sk-or-</code> شروع شود.</p></div>';
 			} );
+			return;
 		}
 
 		VP_Api_Manager::save_key(
-			$provider,
 			sanitize_key( $_POST['scope'] ?? 'shared' ),
 			sanitize_text_field( $_POST['label'] ?? '' ),
 			$api_key,

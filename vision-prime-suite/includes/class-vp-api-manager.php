@@ -4,13 +4,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Resolves which API key to use for a given module (content / seo /
- * competitor / image / social-channel) and performs the actual HTTP call.
- * Supports the "shared key for everything" vs "dedicated key per module"
- * choice required by the brief: each module looks up its own scope first,
- * falling back to the shared scope if no dedicated key exists.
+ * Resolves which OpenRouter API key to use for a given module (content / seo
+ * / competitor / image / social-channel) and performs the actual HTTP call.
+ * The plugin talks to a single gateway (OpenRouter) so every key is expected
+ * to look like "sk-or-v1-...", and one key unlocks every underlying model —
+ * there is no per-vendor key format to get wrong.
  */
 class VP_Api_Manager {
+
+	const PROVIDER = 'openrouter';
 
 	public function __construct() {
 		add_action( 'wp_ajax_vp_apikey_test', array( $this, 'ajax_test_key' ) );
@@ -37,12 +39,11 @@ class VP_Api_Manager {
 			wp_send_json_error( array( 'message' => __( 'کلید یافت نشد.', 'vp-suite' ) ) );
 		}
 
-		$detected = self::detect_provider_from_key( $row->api_key );
-		if ( $detected && $detected !== $row->provider ) {
-			wp_send_json_error( array( 'message' => sprintf( __( 'این کلید با فرمت سرویس «%s» مطابقت دارد، نه «%s». آن را حذف کنید و دوباره با سرویس درست ثبت کنید.', 'vp-suite' ), $detected, $row->provider ) ) );
+		if ( ! self::is_valid_key_format( $row->api_key ) ) {
+			wp_send_json_error( array( 'message' => __( 'این مقدار فرمت یک کلید OpenRouter معتبر را ندارد (باید با sk-or- شروع شود).', 'vp-suite' ) ) );
 		}
 
-		$result = self::test_key( $row->provider, $row->api_key );
+		$result = self::test_key( $row->api_key );
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
@@ -75,24 +76,33 @@ class VP_Api_Manager {
 	}
 
 	/**
-	 * Minimal real request against the provider to confirm a key actually
+	 * OpenRouter keys are unambiguous: they always start with "sk-or-".
+	 * Anything else pasted into this field can never work against the
+	 * gateway this plugin talks to.
+	 */
+	public static function is_valid_key_format( $api_key ) {
+		return (bool) preg_match( '/^sk-or-/', (string) $api_key );
+	}
+
+	/**
+	 * Minimal real request against OpenRouter to confirm a key actually
 	 * works, independent of any module's prompts/scope.
 	 */
-	public static function test_key( $provider, $api_key, $model = '' ) {
-		$config = VP_AI_Providers::get_provider( $provider );
-		if ( ! $config ) {
-			return new WP_Error( 'vp_unknown_provider', __( 'Provider نامشخص است.', 'vp-suite' ) );
+	public static function test_key( $api_key, $model = '' ) {
+		if ( ! self::is_valid_key_format( $api_key ) ) {
+			return new WP_Error( 'vp_bad_key_format', __( 'این مقدار فرمت یک کلید OpenRouter معتبر را ندارد (باید با sk-or- شروع شود).', 'vp-suite' ) );
 		}
 
 		if ( empty( $model ) ) {
-			$model = $config['models'][0] ?? '';
+			$models = VP_AI_Providers::get_provider( self::PROVIDER )['models'] ?? array();
+			$model  = $models[0] ?? '';
 		}
 		if ( empty( $model ) ) {
 			return new WP_Error( 'vp_no_model', __( 'مدلی برای این سرویس تعریف نشده است.', 'vp-suite' ) );
 		}
 
 		$messages = array( array( 'role' => 'user', 'content' => 'سلام' ) );
-		$result   = self::request( $provider, $model, $messages, $api_key );
+		$result   = self::request( $model, $messages, $api_key );
 
 		if ( is_wp_error( $result ) ) {
 			return $result;
@@ -101,60 +111,33 @@ class VP_Api_Manager {
 		return true;
 	}
 
-	public static function get_key( $provider, $scope = 'shared' ) {
+	public static function get_key( $scope = 'shared' ) {
 		global $wpdb;
 		$table = $wpdb->prefix . 'vp_api_keys';
 
 		$row = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT * FROM $table WHERE provider = %s AND scope = %s AND is_active = 1 ORDER BY id DESC LIMIT 1",
-				$provider,
+				"SELECT * FROM $table WHERE scope = %s AND is_active = 1 ORDER BY priority ASC, id DESC LIMIT 1",
 				$scope
 			)
 		);
 
 		if ( ! $row && 'shared' !== $scope ) {
 			$row = $wpdb->get_row(
-				$wpdb->prepare(
-					"SELECT * FROM $table WHERE provider = %s AND scope = 'shared' AND is_active = 1 ORDER BY id DESC LIMIT 1",
-					$provider
-				)
+				$wpdb->prepare( "SELECT * FROM $table WHERE scope = 'shared' AND is_active = 1 ORDER BY priority ASC, id DESC LIMIT 1" )
 			);
 		}
 
 		return $row ? $row->api_key : '';
 	}
 
-	/**
-	 * Key prefixes are vendor-specific and unambiguous (OpenRouter's
-	 * "sk-or-" vs OpenAI's plain "sk-" vs Anthropic's "sk-ant-" etc.), so a
-	 * key pasted under the wrong provider dropdown — the single most common
-	 * cause of "my key never connects" — can be caught and corrected before
-	 * it's ever saved, instead of silently failing every request later.
-	 */
-	public static function detect_provider_from_key( $api_key ) {
-		if ( preg_match( '/^sk-or-/', $api_key ) ) {
-			return 'openrouter';
-		}
-		if ( preg_match( '/^sk-ant-/', $api_key ) ) {
-			return 'anthropic';
-		}
-		if ( preg_match( '/^AIza/', $api_key ) ) {
-			return 'google';
-		}
-		if ( preg_match( '/^sk-(proj-)?[A-Za-z0-9]/', $api_key ) ) {
-			return 'openai';
-		}
-		return null;
-	}
-
-	public static function save_key( $provider, $scope, $label, $api_key, $meta = array(), $priority = 100 ) {
+	public static function save_key( $scope, $label, $api_key, $meta = array(), $priority = 100 ) {
 		global $wpdb;
 		$wpdb->insert(
 			$wpdb->prefix . 'vp_api_keys',
 			array(
 				'label'      => $label,
-				'provider'   => $provider,
+				'provider'   => self::PROVIDER,
 				'scope'      => $scope,
 				'api_key'    => $api_key,
 				'meta'       => wp_json_encode( $meta ),
@@ -170,14 +153,14 @@ class VP_Api_Manager {
 
 	public static function list_keys() {
 		global $wpdb;
-		return $wpdb->get_results( "SELECT id, label, provider, scope, priority, is_active, created_at FROM {$wpdb->prefix}vp_api_keys ORDER BY priority ASC, id DESC" );
+		return $wpdb->get_results( "SELECT id, label, scope, priority, is_active, created_at FROM {$wpdb->prefix}vp_api_keys ORDER BY priority ASC, id DESC" );
 	}
 
 	/**
-	 * Returns the ordered list of candidate (provider, model) pairs for a
-	 * scope, across both dedicated and shared keys, lowest priority first.
-	 * This is the backbone of the multi-API fallback chain: if a provider
-	 * hits a rate limit or errors, the caller walks to the next row.
+	 * Returns the ordered list of candidate keys for a scope, across both
+	 * dedicated and shared keys, lowest priority first. This is the
+	 * backbone of the multi-key fallback chain: if a key hits a rate limit
+	 * or errors, the caller walks to the next row.
 	 */
 	public static function get_key_chain( $scope = 'shared' ) {
 		global $wpdb;
@@ -205,61 +188,41 @@ class VP_Api_Manager {
 	}
 
 	/**
-	 * Performs a chat-completion style call against any registered provider.
+	 * Performs a chat-completion style call against OpenRouter.
 	 *
-	 * @param string $provider Provider key from VP_AI_Providers.
-	 * @param string $model    Model id.
+	 * @param string $model    Model id (e.g. "openai/gpt-4o-mini").
 	 * @param array  $messages [['role'=>'system|user','content'=>'...']]
 	 * @param string $scope    Key scope (e.g. 'content', 'seo', 'competitor').
 	 */
-	public static function chat( $provider, $model, $messages, $scope = 'shared' ) {
-		$key = self::get_key( $provider, $scope );
+	public static function chat( $model, $messages, $scope = 'shared' ) {
+		$key = self::get_key( $scope );
 		if ( empty( $key ) ) {
-			return new WP_Error( 'vp_missing_key', __( 'کلید API برای این سرویس ثبت نشده است.', 'vp-suite' ) );
+			return new WP_Error( 'vp_missing_key', __( 'کلید API برای این بخش ثبت نشده است.', 'vp-suite' ) );
 		}
-		return self::request( $provider, $model, $messages, $key );
+		return self::request( $model, $messages, $key );
 	}
 
 	/**
-	 * Walks the priority-ordered key chain for a scope and tries each
-	 * provider in turn until one succeeds. This is what every AI-calling
-	 * module should use so that a rate-limited/dead key doesn't stall the
+	 * Walks the priority-ordered key chain for a scope and tries each key in
+	 * turn until one succeeds, so a rate-limited/dead key doesn't stall the
 	 * whole ecosystem — the next ready alternative is tried automatically.
 	 *
-	 * @param string      $scope             Key scope (content/seo/competitor/image/...).
-	 * @param array       $messages          Chat messages.
-	 * @param string|null $preferred_provider Tried first if it has a key in the chain.
-	 * @param string|null $preferred_model    Model to use with the preferred provider.
+	 * @param string      $scope          Key scope (content/seo/competitor/image/...).
+	 * @param array       $messages       Chat messages.
+	 * @param string|null $unused         Kept for call-site compatibility (provider is no longer selectable).
+	 * @param string|null $preferred_model Model id to use, if any.
 	 */
-	public static function chat_with_fallback( $scope, $messages, $preferred_provider = null, $preferred_model = null ) {
+	public static function chat_with_fallback( $scope, $messages, $unused = null, $preferred_model = null ) {
 		$chain = self::get_key_chain( $scope );
 		if ( empty( $chain ) ) {
-			return new WP_Error( 'vp_missing_key', __( 'هیچ کلید API فعالی برای این بخش ثبت نشده است.', 'vp-suite' ) );
+			return new WP_Error( 'vp_missing_key', __( 'هیچ کلید API فعالی ثبت نشده است.', 'vp-suite' ) );
 		}
 
-		if ( $preferred_provider ) {
-			usort(
-				$chain,
-				function ( $a, $b ) use ( $preferred_provider ) {
-					$a_match = ( $a->provider === $preferred_provider ) ? 0 : 1;
-					$b_match = ( $b->provider === $preferred_provider ) ? 0 : 1;
-					return $a_match <=> $b_match;
-				}
-			);
-		}
-
-		$last_error = new WP_Error( 'vp_all_failed', __( 'تمام سرویس‌های ثبت‌شده ناموفق بودند.', 'vp-suite' ) );
+		$model      = $preferred_model ?: self::pick_default_model();
+		$last_error = new WP_Error( 'vp_all_failed', __( 'تمام کلیدهای ثبت‌شده ناموفق بودند.', 'vp-suite' ) );
 
 		foreach ( $chain as $row ) {
-			$model = ( $preferred_provider && $row->provider === $preferred_provider && $preferred_model )
-				? $preferred_model
-				: self::pick_default_model( $row->provider );
-
-			if ( ! $model ) {
-				continue;
-			}
-
-			$result = self::request( $row->provider, $model, $messages, $row->api_key );
+			$result = self::request( $model, $messages, $row->api_key );
 
 			if ( ! is_wp_error( $result ) ) {
 				return $result;
@@ -268,7 +231,7 @@ class VP_Api_Manager {
 			$last_error = $result;
 			VP_Logger::log(
 				'api_manager',
-				sprintf( 'تلاش با %1$s ناموفق بود، رفتن به جایگزین بعدی: %2$s', $row->provider, $result->get_error_message() ),
+				sprintf( 'تلاش با کلید «%1$s» ناموفق بود، رفتن به جایگزین بعدی: %2$s', $row->label, $result->get_error_message() ),
 				'warning',
 				array( 'scope' => $scope, 'priority' => $row->priority )
 			);
@@ -277,53 +240,29 @@ class VP_Api_Manager {
 		return $last_error;
 	}
 
-	private static function pick_default_model( $provider ) {
-		$config = VP_AI_Providers::get_provider( $provider );
-		if ( ! $config || empty( $config['models'] ) ) {
-			return '';
-		}
-		return $config['models'][0];
+	private static function pick_default_model() {
+		$config = VP_AI_Providers::get_provider( self::PROVIDER );
+		return $config['models'][0] ?? '';
 	}
 
-	private static function request( $provider, $model, $messages, $key ) {
-		$config = VP_AI_Providers::get_provider( $provider );
-		if ( ! $config ) {
-			return new WP_Error( 'vp_unknown_provider', __( 'Provider نامشخص است.', 'vp-suite' ) );
-		}
+	private static function request( $model, $messages, $key ) {
+		$config = VP_AI_Providers::get_provider( self::PROVIDER );
 
 		if ( empty( $key ) ) {
 			return new WP_Error( 'vp_missing_key', __( 'کلید API خالی است.', 'vp-suite' ) );
 		}
 
-		if ( 'google' === $provider ) {
-			return self::request_google( $config, $model, $messages, $key );
-		}
-
-		$body = ( 'anthropic' === $provider )
-			? array(
-				'model'      => $model,
-				'max_tokens' => 4096,
-				'messages'   => array_values( array_filter( $messages, fn( $m ) => 'system' !== $m['role'] ) ),
-				'system'     => self::extract_system( $messages ),
-			)
-			: array(
-				'model'    => $model,
-				'messages' => $messages,
-			);
+		$body = array(
+			'model'    => $model,
+			'messages' => $messages,
+		);
 
 		$headers = array(
-			'Content-Type' => 'application/json',
+			'Content-Type'  => 'application/json',
+			'HTTP-Referer'  => home_url(),
+			'X-Title'       => 'VisionPrime Suite',
 		);
 		$headers[ $config['auth_header'] ] = $config['auth_prefix'] . $key;
-
-		if ( 'anthropic' === $provider ) {
-			$headers['anthropic-version'] = '2023-06-01';
-		}
-
-		if ( 'openrouter' === $provider ) {
-			$headers['HTTP-Referer'] = home_url();
-			$headers['X-Title']      = 'VisionPrime Suite';
-		}
 
 		$response = wp_remote_post(
 			$config['endpoint'],
@@ -334,51 +273,12 @@ class VP_Api_Manager {
 			)
 		);
 
-		return self::handle_response( $provider, $model, $response );
+		return self::handle_response( $model, $response );
 	}
 
-	/**
-	 * Google's Generative Language API uses a different URL shape
-	 * (model name is part of the path, not the body) and a different
-	 * request/response schema (contents/parts instead of messages),
-	 * so it can't share the OpenAI-style body builder above.
-	 */
-	private static function request_google( $config, $model, $messages, $key ) {
-		$contents = array();
-		foreach ( $messages as $m ) {
-			if ( 'system' === $m['role'] ) {
-				continue;
-			}
-			$contents[] = array(
-				'role'  => 'assistant' === $m['role'] ? 'model' : 'user',
-				'parts' => array( array( 'text' => $m['content'] ) ),
-			);
-		}
-
-		$body = array( 'contents' => $contents );
-		$system = self::extract_system( $messages );
-		if ( ! empty( $system ) ) {
-			$body['systemInstruction'] = array( 'parts' => array( array( 'text' => $system ) ) );
-		}
-
-		$response = wp_remote_post(
-			$config['endpoint'] . '/' . $model . ':generateContent',
-			array(
-				'headers' => array(
-					'Content-Type'  => 'application/json',
-					$config['auth_header'] => $key,
-				),
-				'body'    => wp_json_encode( $body ),
-				'timeout' => 90,
-			)
-		);
-
-		return self::handle_response( 'google', $model, $response );
-	}
-
-	private static function handle_response( $provider, $model, $response ) {
+	private static function handle_response( $model, $response ) {
 		if ( is_wp_error( $response ) ) {
-			VP_Logger::log( 'api_manager', $response->get_error_message(), 'error', compact( 'provider', 'model' ) );
+			VP_Logger::log( 'api_manager', $response->get_error_message(), 'error', compact( 'model' ) );
 			return $response;
 		}
 
@@ -387,20 +287,20 @@ class VP_Api_Manager {
 
 		if ( $code >= 400 ) {
 			$detail = self::extract_error_message( $data );
-			VP_Logger::log( 'api_manager', 'HTTP ' . $code . ' از ' . $provider . ( $detail ? ": $detail" : '' ), 'error', array( 'response' => $data ) );
+			VP_Logger::log( 'api_manager', 'HTTP ' . $code . ' از OpenRouter' . ( $detail ? ": $detail" : '' ), 'error', array( 'response' => $data ) );
 			return new WP_Error(
 				'vp_api_error',
-				sprintf( __( 'خطای سرویس %1$s (کد %2$d)%3$s', 'vp-suite' ), $provider, $code, $detail ? ": $detail" : '' )
+				sprintf( __( 'خطای OpenRouter (کد %1$d)%2$s', 'vp-suite' ), $code, $detail ? ": $detail" : '' )
 			);
 		}
 
-		$text = self::extract_text( $provider, $data );
+		$text = self::extract_text( $data );
 		if ( '' === $text ) {
-			VP_Logger::log( 'api_manager', "پاسخ خالی از $provider/$model", 'warning', array( 'response' => $data ) );
+			VP_Logger::log( 'api_manager', "پاسخ خالی از $model", 'warning', array( 'response' => $data ) );
 			return new WP_Error( 'vp_empty_response', __( 'پاسخ سرویس خالی بود.', 'vp-suite' ) );
 		}
 
-		VP_Logger::log( 'api_manager', "پاسخ موفق از $provider/$model", 'info' );
+		VP_Logger::log( 'api_manager', "پاسخ موفق از $model", 'info' );
 
 		return $text;
 	}
@@ -415,22 +315,7 @@ class VP_Api_Manager {
 		return '';
 	}
 
-	private static function extract_system( $messages ) {
-		foreach ( $messages as $m ) {
-			if ( 'system' === $m['role'] ) {
-				return $m['content'];
-			}
-		}
-		return '';
-	}
-
-	private static function extract_text( $provider, $data ) {
-		if ( 'anthropic' === $provider ) {
-			return isset( $data['content'][0]['text'] ) ? $data['content'][0]['text'] : '';
-		}
-		if ( 'google' === $provider ) {
-			return isset( $data['candidates'][0]['content']['parts'][0]['text'] ) ? $data['candidates'][0]['content']['parts'][0]['text'] : '';
-		}
+	private static function extract_text( $data ) {
 		return isset( $data['choices'][0]['message']['content'] ) ? $data['choices'][0]['message']['content'] : '';
 	}
 }

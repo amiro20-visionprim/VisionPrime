@@ -24,22 +24,15 @@
 			<?php wp_nonce_field( 'vp_network_save_apikey', 'vp_network_apikey_nonce' ); ?>
 			<table class="form-table">
 				<tr>
-					<th><label>سرویس</label></th>
-					<td>
-						<select name="provider" required>
-							<?php foreach ( $providers as $key => $p ) : ?>
-								<option value="<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $p['label'] ); ?></option>
-							<?php endforeach; ?>
-						</select>
-					</td>
-				</tr>
-				<tr>
 					<th><label>برچسب</label></th>
 					<td><input type="text" name="label" class="regular-text" placeholder="کلید مشترک شبکه"></td>
 				</tr>
 				<tr>
-					<th><label>کلید API</label></th>
-					<td><input type="text" name="api_key" class="regular-text" required></td>
+					<th><label>کلید OpenRouter</label></th>
+					<td>
+						<input type="text" name="api_key" class="regular-text" dir="ltr" placeholder="sk-or-v1-..." required>
+						<p class="description">این پلاگین فقط با OpenRouter کار می‌کند؛ کلید باید با <code>sk-or-</code> شروع شود.</p>
+					</td>
 				</tr>
 			</table>
 			<p><button class="button button-primary" type="submit">اعمال روی تمام سایت‌های شبکه</button></p>
