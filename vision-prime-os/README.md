@@ -36,8 +36,8 @@ Operating System. Independent of, and unrelated to, the VisionPrime Suite
 | P3 (done) | Wallet Ledger Engine |
 | P4 (done) | Loyalty, Rewards, Customer Club |
 | P5 (done) | Segments, Campaigns, Notifications |
-| P6 (this commit) | Automation Engine |
-| P7 | Integrations, Reports, AI Intelligence Layer |
+| P6 (done) | Automation Engine |
+| P7 (this commit, final) | Integrations, Reports, AI Intelligence Layer |
 
 Standing rules (non-negotiable across all phases): no direct wallet balance
 mutation, no cross-brand data access, soft delete for business-critical
@@ -212,3 +212,55 @@ actions automatically, every list endpoint paginated.
   rule with unmet conditions doesn't run, an inactive rule doesn't run,
   every run is logged, an unknown action type is logged as failed without
   blocking other rules for the same event.
+
+## Phase 7 notes
+
+- This is the final phase in the table — Integrations, Reports, and the AI
+  Intelligence Layer close out the two hook points earlier phases deferred
+  and add the plugin's only read-only analytics surface.
+- The Integration Hub (`modules/integration/class-vpos-integration-repository.php`)
+  is what `vpos_notification_dispatch` (Phase 5) and `vpos_club_otp_generated`
+  (Phase 4) were always deferring to: `deliver( $channel, $recipient, $payload )`
+  looks up `apply_filters('vpos_integration_provider_{channel}', null)` for an
+  actual SMS/email/push gateway and falls back to a log-only no-op when none
+  is registered, so the rest of the plugin works without any gateway
+  configured in dev/test. Every attempt — delivered or logged-only — writes
+  one row to `vpos_integration_logs`. `VPOS_Integration_Module` is hook-based
+  like every prior integration point: it marks the originating notification
+  `sent`/`failed` based on the delivery result, without Notification or Club
+  Session knowing it exists.
+- Reports (`modules/report/class-vpos-report-repository.php`, Master Spec
+  §29) owns no table of its own — it's read-only aggregate `$wpdb` queries
+  over tables Customer/Order/Wallet/Loyalty/Notification already own:
+  `revenue_summary`, `customer_growth`, `wallet_liability`/`loyalty_liability`
+  (outstanding balances framed as liabilities, not income), `campaign_performance`,
+  `top_customers`. No caching layer — every call reflects current state.
+- The AI Intelligence Layer (`modules/ai/class-vpos-ai-repository.php`,
+  Master Spec §33) generates `churn_risk` insights for customers inactive
+  90+ days and always suggests, never auto-applies: every insight needs an
+  explicit human `approve()`/`reject()`. Crucially, the approval action
+  vocabulary (`VPOS_Ai_Repository::ACTIONS`) is a strict subset of
+  Automation's and deliberately excludes `loyalty_earn`/`wallet_credit`
+  entirely — "AI never executes financial actions" (a Master Spec
+  non-negotiable) is enforced by the vocabulary itself, not just a review
+  gate. A daily background job (`VPOS_Jobs::enqueue_recurring`) scans for
+  new churn-risk candidates, skipping customers with an already-open
+  suggestion.
+- RBAC gained `ai:*`/`ai:view`/`ai:manage` permissions on the brand owner,
+  brand admin, CRM manager, and marketing manager roles.
+- REST: `GET /reports/{revenue,customer-growth,liabilities,top-customers}`,
+  `GET /reports/campaigns/{id}`, `GET /integrations/logs`, `GET /ai/insights`,
+  `POST /ai/insights/{id}/{approve,reject}`. wp-admin: **VisionPrime OS →
+  Reports / Integration Logs / AI Insights**.
+- Tests: `tests/report-test.php` — revenue summary counts only completed
+  orders, customer growth counts new customers, wallet liability reflects
+  confirmed credits, top customers ordered by lifetime value.
+  `tests/integration-test.php` — delivery without a provider is logged
+  only, delivery uses a registered provider when present, notification
+  dispatch is delivered and marked sent, Club OTP generation is delivered
+  via the SMS channel. `tests/ai-test.php` — churn risk is suggested for an
+  inactive customer, not suggested twice while one is open, approving
+  executes its non-financial action, rejecting takes no action, an
+  already-reviewed insight can't be approved again, an unsupported
+  (financial) action type is rejected and never touches wallet/loyalty
+  balances.
