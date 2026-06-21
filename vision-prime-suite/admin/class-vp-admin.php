@@ -224,6 +224,7 @@ class VP_Admin {
 		VP_Settings::update( 'auto_external_linking', ! empty( $_POST['auto_external_linking'] ) );
 		VP_Settings::update( 'auto_social_distribution', ! empty( $_POST['auto_social_distribution'] ) );
 		VP_Settings::update( 'pre_publish_qa', ! empty( $_POST['pre_publish_qa'] ) );
+		VP_Settings::update( 'competitor_auto_scan', ! empty( $_POST['competitor_auto_scan'] ) );
 
 		add_action( 'admin_notices', function () {
 			echo '<div class="notice notice-success"><p>تنظیمات ذخیره شد.</p></div>';

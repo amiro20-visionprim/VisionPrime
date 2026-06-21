@@ -41,6 +41,7 @@ class VP_Settings {
 			'auto_social_distribution' => false,
 			'brand_voice'              => '',
 			'pre_publish_qa'           => true,
+			'competitor_auto_scan'     => false,
 		);
 
 		return wp_parse_args( get_option( self::OPTION, array() ), $defaults );

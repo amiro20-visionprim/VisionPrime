@@ -12,8 +12,69 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class VP_Competitor_Analysis {
 
+	const AUTO_BATCH_SIZE = 3;
+
 	public function __construct() {
 		add_action( 'wp_ajax_vp_competitor_scan', array( $this, 'ajax_scan' ) );
+	}
+
+	/**
+	 * Automatic mode: pulls real keywords already present in Search Console
+	 * data (the "content gap" and "striking distance" buckets — keywords
+	 * with real impressions that aren't ranking well yet) and runs the same
+	 * scan() used by the manual UI, so reports look identical regardless of
+	 * how the keyword was sourced. Requires GSC to be connected and the
+	 * toggle enabled; does nothing otherwise (no invented keywords).
+	 *
+	 * @return int Number of automatic reports created in this run.
+	 */
+	public static function run_auto_scan() {
+		if ( ! VP_Settings::get( 'competitor_auto_scan' ) ) {
+			return 0;
+		}
+		if ( ! class_exists( 'VP_Search_Console' ) || ! VP_Search_Console::is_connected() ) {
+			return 0;
+		}
+
+		$conn = VP_Search_Console::get_connection();
+		if ( empty( $conn['site_url'] ) ) {
+			return 0;
+		}
+
+		$opportunities = VP_Search_Console::find_opportunities( $conn['site_url'] );
+		if ( is_wp_error( $opportunities ) ) {
+			VP_Logger::log( 'competitor_analysis', 'دریافت داده‌ی GSC برای تحلیل خودکار رقبا ناموفق: ' . $opportunities->get_error_message(), 'error' );
+			return 0;
+		}
+
+		$candidates = array_merge( $opportunities['content_gap'], $opportunities['striking_distance'] );
+		if ( empty( $candidates ) ) {
+			return 0;
+		}
+
+		global $wpdb;
+		$already_done = $wpdb->get_col( "SELECT DISTINCT keyword FROM {$wpdb->prefix}vp_competitor_reports WHERE created_at > DATE_SUB(NOW(), INTERVAL 14 DAY)" );
+
+		$count = 0;
+		foreach ( $candidates as $item ) {
+			if ( $count >= self::AUTO_BATCH_SIZE ) {
+				break;
+			}
+			$keyword = $item['query'] ?? '';
+			if ( '' === $keyword || in_array( $keyword, $already_done, true ) ) {
+				continue;
+			}
+
+			self::scan( $keyword, '' );
+			$already_done[] = $keyword;
+			$count++;
+		}
+
+		if ( $count > 0 ) {
+			VP_Logger::log( 'competitor_analysis', "$count تحلیل رقبا به‌صورت خودکار بر اساس کلمات کلیدی واقعی Search Console اجرا شد.", 'info' );
+		}
+
+		return $count;
 	}
 
 	public static function default_prompt() {

@@ -48,6 +48,13 @@
 					</td>
 				</tr>
 				<tr>
+					<th><label>تحلیل خودکار رقبا (بر اساس کلمات کلیدی Search Console)</label></th>
+					<td>
+						<label><input type="checkbox" name="competitor_auto_scan" <?php checked( $settings['competitor_auto_scan'] ); ?>> فعال</label>
+						<p class="description">روزانه، بدون دخالت دستی، چند کلمه‌ی کلیدی واقعی از فرصت‌های Search Console (شکاف محتوایی/فاصله‌ی نزدیک) انتخاب و تحلیل رقبا برای آن‌ها با همان «پرامپت استراتژیست تحلیل رقبا» بالا اجرا می‌شود. نیازمند اتصال فعال به Search Console است.</p>
+					</td>
+				</tr>
+				<tr>
 					<th><label>کنترل کیفیت پیش از انتشار (QA)</label></th>
 					<td><label><input type="checkbox" name="pre_publish_qa" <?php checked( $settings['pre_publish_qa'] ); ?>> فعال</label> <p class="description">بررسی خودکار لینک‌های شکسته، تصاویر بدون alt و محتوای کم‌حجم قبل از انتشار نهایی.</p></td>
 				</tr>
