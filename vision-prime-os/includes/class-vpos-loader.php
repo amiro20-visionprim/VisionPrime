@@ -45,6 +45,14 @@ class VPOS_Loader {
 		require_once VPOS_DIR . 'modules/wallet/class-vpos-wallet-repository.php';
 		require_once VPOS_DIR . 'modules/wallet/class-vpos-wallet-rest.php';
 		require_once VPOS_DIR . 'modules/wallet/class-vpos-wallet-module.php';
+
+		// Phase 4 — Loyalty, Rewards, Customer Club.
+		require_once VPOS_DIR . 'modules/loyalty/class-vpos-loyalty-repository.php';
+		require_once VPOS_DIR . 'modules/reward/class-vpos-reward-repository.php';
+		require_once VPOS_DIR . 'modules/loyalty/class-vpos-loyalty-rest.php';
+		require_once VPOS_DIR . 'modules/loyalty/class-vpos-loyalty-module.php';
+		require_once VPOS_DIR . 'modules/club/class-vpos-club-session.php';
+		require_once VPOS_DIR . 'modules/club/class-vpos-club-module.php';
 	}
 
 	public function init_modules() {
@@ -54,6 +62,8 @@ class VPOS_Loader {
 		$this->register_module( 'tenant', new VPOS_Tenant_Module() );
 		$this->register_module( 'customer', new VPOS_Customer_Module() );
 		$this->register_module( 'wallet', new VPOS_Wallet_Module() );
+		$this->register_module( 'loyalty', new VPOS_Loyalty_Module() );
+		$this->register_module( 'club', new VPOS_Club_Module() );
 
 		if ( is_admin() ) {
 			$this->modules['admin'] = new VPOS_Admin();

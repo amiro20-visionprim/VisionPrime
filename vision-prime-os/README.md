@@ -33,8 +33,8 @@ Operating System. Independent of, and unrelated to, the VisionPrime Suite
 | P0 (done) | Plugin skeleton, base layer, RBAC roles, audit log, admin shell |
 | P1 (done) | Organization/Brand/Branch, brand_settings, REST API, admin UI, tests |
 | P2 (done) | Customer Data Platform, Customer 360, Order Engine |
-| P3 (this commit) | Wallet Ledger Engine |
-| P4 | Loyalty, Rewards, Customer Club |
+| P3 (done) | Wallet Ledger Engine |
+| P4 (this commit) | Loyalty, Rewards, Customer Club |
 | P5 | Segments, Campaigns, Notifications |
 | P6 | Automation Engine |
 | P7 | Integrations, Reports, AI Intelligence Layer |
@@ -111,3 +111,40 @@ actions automatically, every list endpoint paginated.
   exceed balance, reversal writes an opposite entry instead of mutating,
   a reversal can't itself be reversed, disabled wallet blocks credit,
   order cashback is applied on completion and reversed on cancellation.
+
+## Phase 4 notes
+
+- Loyalty Ledger (`modules/loyalty/class-vpos-loyalty-repository.php`) is
+  built on the same `VPOS_Ledger` trait as Wallet, plus a `vpos_loyalty_tiers`
+  table. `lifetime_points()` sums credit-direction confirmed entries only,
+  so spending points never demotes a customer's tier — `current_tier()` is
+  derived from lifetime points, not spendable balance.
+- Reward catalog + redemption (`modules/reward/class-vpos-reward-repository.php`)
+  is a separate, smaller repository: `redeem()` debits points via
+  `VPOS_Loyalty_Repository::spend()` first and bails on `WP_Error` before
+  ever touching stock or writing a redemption record, so an insufficient-
+  points failure can't leave a dangling redemption or decremented stock.
+- Order → Loyalty integration mirrors the Wallet pattern: `VPOS_Loyalty_Module`
+  listens to `vpos_order_completed` (awards points from
+  `brand_settings.settings.points_rate`, scaled by the customer's current
+  tier multiplier) and `vpos_order_cancelled` (reverses any points tied to
+  that order_id) — `VPOS_Order_Repository` stays unaware of Loyalty.
+- Customer 360 gained `loyalty` (balance, tier) and `rewards` (recent
+  redemptions) sections via the same `vpos_customer_360` filter.
+- Customer Club is server-rendered WordPress front end, not an SPA:
+  `[vpos_club_login]` and `[vpos_club_dashboard]` shortcodes, with OTP-based
+  pseudo-session login (`VPOS_Club_Session`) for end customers who aren't WP
+  users — a signed cookie (`wp_hash()` HMAC over customer id + expiry)
+  stands in for `wp_set_auth_cookie()`. OTP delivery itself is a hook point
+  only (`vpos_club_otp_generated`) — actual SMS sending is deferred to the
+  Phase 7 integrations layer, and the code is never echoed into the page.
+- REST: `GET /customers/{id}/loyalty`, `POST .../loyalty/earn`,
+  `GET|POST /loyalty/tiers`, `GET|POST /rewards`, `PATCH /rewards/{id}`,
+  `POST /customers/{id}/rewards/redeem`, `POST /loyalty/entries/{id}/reverse`.
+  wp-admin: **VisionPrime OS → Loyalty Tiers / Rewards / Redeem Reward**.
+- Tests: `tests/loyalty-test.php` — earning increases balance and lifetime
+  points, spending can't exceed balance, spending doesn't demote tier
+  eligibility, redeeming a reward debits points and decrements stock,
+  redemption fails when points are insufficient, out-of-stock rewards are
+  rejected, completed-order points are reversed on cancellation, Customer
+  Club OTP login creates a customer + session, wrong OTP code is rejected.
