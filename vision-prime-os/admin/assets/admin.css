@@ -1,0 +1,11 @@
+.vpos-wrap .vpos-card {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	padding: 16px;
+	margin-top: 16px;
+	max-width: 720px;
+}
+.vpos-wrap .vpos-card h2 {
+	margin-top: 0;
+}
