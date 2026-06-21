@@ -70,4 +70,36 @@ class VP_Channel_Generic_Webhook extends VP_Channel_Base {
 
 		return array( 'http_code' => $code );
 	}
+
+	public function get_required_fields() {
+		return array(
+			array( 'key' => 'endpoint', 'label' => 'آدرس Endpoint رسمی API', 'type' => 'text', 'placeholder' => 'https://api.example.com/send' ),
+			array( 'key' => 'headers', 'label' => 'هدرهای HTTP (JSON، اختیاری)', 'type' => 'text', 'placeholder' => '{"Authorization":"Bearer ..."}' ),
+		);
+	}
+
+	public function get_notes() {
+		return array(
+			sprintf( 'باید: endpoint رسمی API کسب‌وکار %s را از کاتالوگ راهنما دنبال و وارد کنید.', $this->label ),
+			'نباید: تا قبل از ثبت endpoint واقعی، انتظار ارسال واقعی پیام را نداشته باشید.',
+		);
+	}
+
+	public function test_connection( $account ) {
+		$config   = json_decode( $account->config, true );
+		$endpoint = $config['endpoint'] ?? '';
+
+		if ( empty( $endpoint ) ) {
+			return new WP_Error(
+				'vp_channel_not_configured',
+				sprintf( 'برای %s هنوز endpoint ثبت نشده است.', $this->label )
+			);
+		}
+
+		if ( ! wp_http_validate_url( $endpoint ) ) {
+			return new WP_Error( 'vp_channel_invalid_url', __( 'آدرس endpoint نامعتبر است.', 'vp-suite' ) );
+		}
+
+		return true;
+	}
 }

@@ -60,4 +60,40 @@ class VP_Channel_Telegram extends VP_Channel_Base {
 		// public channel — left as a documented limitation for the catalog.
 		return array( 'note' => __( 'آمار بازدید فقط برای کانال‌های عمومی در دسترس است.', 'vp-suite' ) );
 	}
+
+	public function get_required_fields() {
+		return array(
+			array( 'key' => 'bot_token', 'label' => 'توکن بات (Bot Token)', 'type' => 'password', 'placeholder' => '123456:ABC-DEF...' ),
+			array( 'key' => 'chat_id', 'label' => 'شناسه چت/کانال (Chat ID)', 'type' => 'text', 'placeholder' => '@your_channel یا 123456789' ),
+		);
+	}
+
+	public function get_notes() {
+		return array(
+			'باید: بات را ادمین کانال/گروه مقصد کنید تا بتواند پیام بفرستد.',
+			'باید: chat_id کانال عمومی را با @ یا شناسه عددی واقعی وارد کنید.',
+			'نباید: توکن بات را در جای دیگری منتشر کنید؛ هر کسی با توکن می‌تواند به‌جای شما پیام بفرستد.',
+		);
+	}
+
+	public function test_connection( $account ) {
+		$config = json_decode( $account->config, true );
+		$token  = $config['bot_token'] ?? '';
+
+		if ( empty( $token ) ) {
+			return new WP_Error( 'vp_telegram_config', __( 'توکن بات تنظیم نشده است.', 'vp-suite' ) );
+		}
+
+		$response = wp_remote_get( "https://api.telegram.org/bot{$token}/getMe", array( 'timeout' => 15 ) );
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$data = json_decode( wp_remote_retrieve_body( $response ), true );
+		if ( empty( $data['ok'] ) ) {
+			return new WP_Error( 'vp_telegram_test_failed', $data['description'] ?? __( 'توکن بات نامعتبر است.', 'vp-suite' ) );
+		}
+
+		return true;
+	}
 }

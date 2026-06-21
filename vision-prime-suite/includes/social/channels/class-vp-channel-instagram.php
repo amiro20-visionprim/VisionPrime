@@ -139,4 +139,47 @@ class VP_Channel_Instagram extends VP_Channel_Base {
 
 		return $config['default_image_url'] ?? '';
 	}
+
+	public function get_required_fields() {
+		return array(
+			array( 'key' => 'ig_user_id', 'label' => 'شناسه حساب اینستاگرام Business (IG User ID)', 'type' => 'text', 'placeholder' => '1784...' ),
+			array( 'key' => 'access_token', 'label' => 'توکن دسترسی صفحه (Page Access Token)', 'type' => 'password', 'placeholder' => 'EAAB...' ),
+			array( 'key' => 'default_image_url', 'label' => 'تصویر پیش‌فرض (در صورت نبود تصویر شاخص)', 'type' => 'text', 'placeholder' => 'https://example.com/default.jpg' ),
+		);
+	}
+
+	public function get_notes() {
+		return array(
+			'باید: حساب اینستاگرام را به Business/Creator تبدیل و به یک صفحه فیسبوک متصل کنید.',
+			'باید: مجوزهای instagram_content_publish و pages_show_list را در اپ متا فعال کنید.',
+			'نباید: از توکن کوتاه‌مدت استفاده کنید؛ توکن طولانی‌مدت (long-lived) لازم است.',
+			'نباید: انتظار انتشار بدون تصویر را داشته باشید — اینستاگرام بدون عکس پست منتشر نمی‌کند.',
+		);
+	}
+
+	public function test_connection( $account ) {
+		$config       = json_decode( $account->config, true );
+		$ig_user_id   = $config['ig_user_id'] ?? '';
+		$access_token = $config['access_token'] ?? '';
+
+		if ( empty( $ig_user_id ) || empty( $access_token ) ) {
+			return new WP_Error( 'vp_instagram_config', __( 'ig_user_id و access_token باید تنظیم شوند.', 'vp-suite' ) );
+		}
+
+		$response = wp_remote_get(
+			self::API_BASE . "/{$ig_user_id}?fields=username&access_token=" . rawurlencode( $access_token ),
+			array( 'timeout' => 15 )
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$data = json_decode( wp_remote_retrieve_body( $response ), true );
+		if ( empty( $data['username'] ) ) {
+			return new WP_Error( 'vp_instagram_test_failed', $data['error']['message'] ?? __( 'احراز هویت اینستاگرام ناموفق بود.', 'vp-suite' ) );
+		}
+
+		return true;
+	}
 }

@@ -181,18 +181,51 @@
 			});
 		});
 
-		// --- Social: add account ---
+		// --- Social: show only the selected channel's dedicated fields ---
+		function refreshSocialChannelFields() {
+			var channel = $('#vp-social-channel-select').val();
+			$('.vp-social-channel-fields').hide();
+			$('.vp-social-channel-fields[data-channel="' + channel + '"]').show();
+		}
+		$('#vp-social-channel-select').on('change', refreshSocialChannelFields);
+		refreshSocialChannelFields();
+
+		// --- Social: add account (builds config JSON from the visible per-channel fields) ---
 		$('#vp-social-account-form').on('submit', function (e) {
 			e.preventDefault();
 			var $form = $(this);
+			var channel = $form.find('[name=channel]').val();
+			var config = {};
+			$('.vp-social-channel-fields[data-channel="' + channel + '"] .vp-social-field').each(function () {
+				config[$(this).data('field-key')] = $(this).val();
+			});
+
 			postAjax('vp_social_save_account', {
-				channel: $form.find('[name=channel]').val(),
+				channel: channel,
 				label: $form.find('[name=label]').val(),
-				config: $form.find('[name=config]').val()
+				config: JSON.stringify(config)
 			}).done(function (res) {
 				if (res.success) location.reload();
 				else alert(res.data.message);
 			});
+		});
+
+		// --- Social: test connection ---
+		$(document).on('click', '.vp-social-test-btn', function () {
+			var $btn = $(this).prop('disabled', true);
+			var accountId = $btn.data('account-id');
+			var $result = $('.vp-social-test-result[data-account-id="' + accountId + '"]');
+			$result.removeClass('vp-success vp-error').text('در حال بررسی...');
+
+			postAjax('vp_social_test_connection', { account_id: accountId }).done(function (res) {
+				if (res.success) {
+					$result.addClass('vp-success').text('✅ ' + res.data.message);
+				} else {
+					$result.addClass('vp-error').text('❌ ' + res.data.message);
+				}
+			}).fail(function () {
+				$result.addClass('vp-error').text('خطای ارتباط با سرور.');
+			}).always(function () { $btn.prop('disabled', false); });
 		});
 
 		// --- Reports: send on demand ---

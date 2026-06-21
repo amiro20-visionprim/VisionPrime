@@ -16,6 +16,7 @@ class VP_Social_Manager {
 		$this->register_channels();
 		add_action( 'wp_ajax_vp_social_send', array( $this, 'ajax_send' ) );
 		add_action( 'wp_ajax_vp_social_save_account', array( $this, 'ajax_save_account' ) );
+		add_action( 'wp_ajax_vp_social_test_connection', array( $this, 'ajax_test_connection' ) );
 	}
 
 	private function register_channels() {
@@ -178,6 +179,34 @@ class VP_Social_Manager {
 		VP_Logger::log( 'social_manager', "حساب «$label» برای کانال $channel ثبت شد.", 'info' );
 
 		wp_send_json_success( array( 'id' => $wpdb->insert_id ) );
+	}
+
+	public function ajax_test_connection() {
+		check_ajax_referer( 'vp_suite_nonce', 'nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'دسترسی غیرمجاز.', 'vp-suite' ) ), 403 );
+		}
+
+		$account_id = absint( $_POST['account_id'] ?? 0 );
+
+		global $wpdb;
+		$account = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}vp_social_accounts WHERE id = %d", $account_id ) );
+		if ( ! $account ) {
+			wp_send_json_error( array( 'message' => __( 'حساب یافت نشد.', 'vp-suite' ) ) );
+		}
+
+		$channel = self::get_channel( $account->channel );
+		if ( ! $channel ) {
+			wp_send_json_error( array( 'message' => __( 'کانال پشتیبانی نمی‌شود.', 'vp-suite' ) ) );
+		}
+
+		$result = $channel->test_connection( $account );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		wp_send_json_success( array( 'message' => __( 'اتصال با موفقیت تایید شد.', 'vp-suite' ) ) );
 	}
 
 	public function ajax_send() {

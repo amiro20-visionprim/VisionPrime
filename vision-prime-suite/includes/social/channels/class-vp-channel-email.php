@@ -36,4 +36,18 @@ class VP_Channel_Email extends VP_Channel_Base {
 
 		return array( 'sent_to' => $to );
 	}
+
+	public function get_required_fields() {
+		return array(
+			array( 'key' => 'to', 'label' => 'آدرس ایمیل گیرنده', 'type' => 'text', 'placeholder' => 'list@example.com' ),
+			array( 'key' => 'subject', 'label' => 'موضوع پیش‌فرض ایمیل', 'type' => 'text', 'placeholder' => 'به‌روزرسانی جدید از ویژن پرایم' ),
+		);
+	}
+
+	public function get_notes() {
+		return array(
+			'باید: مطمئن شوید سرور/افزونه SMTP سایت برای ارسال ایمیل به‌درستی پیکربندی شده.',
+			'نباید: آدرس گیرنده را به‌صورت لیست عمومی بدون رضایت دریافت‌کنندگان وارد کنید.',
+		);
+	}
 }
