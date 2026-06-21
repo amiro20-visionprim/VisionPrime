@@ -36,5 +36,6 @@ register_activation_hook( __FILE__, array( 'VPOS_Activator', 'activate' ) );
 register_deactivation_hook( __FILE__, array( 'VPOS_Activator', 'deactivate' ) );
 add_action( 'wp_initialize_site', array( 'VPOS_Activator', 'activate_new_site' ) );
 add_action( 'plugins_loaded', array( 'VPOS_Activator', 'maybe_upgrade' ) );
+add_action( 'admin_init', array( 'VPOS_Activator', 'maybe_self_heal' ) );
 
 add_action( 'plugins_loaded', array( $GLOBALS['vpos_loader'], 'init_modules' ) );

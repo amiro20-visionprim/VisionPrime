@@ -30,14 +30,20 @@ class VPOS_Tenant_Module {
 	public function register_admin_menu( $parent ) {
 		$cap = 'read';
 		if ( is_main_site() ) {
-			add_submenu_page( $parent, __( 'Organizations', 'vpos' ), __( 'Organizations', 'vpos' ), $cap, 'vpos-organizations', array( $this, 'render_organizations' ) );
-			add_submenu_page( $parent, __( 'Organization', 'vpos' ), __( 'Organization', 'vpos' ), $cap, 'vpos-organization-edit', array( $this, 'render_organization_edit' ) );
+			// Organizations are still created/managed internally (a Brand
+			// always belongs to one), but the network-oversight list/edit
+			// pages are hidden from the visible menu per operator request —
+			// `null` parent keeps them reachable by direct link only.
+			add_submenu_page( null, __( 'Organizations', 'vpos' ), __( 'Organizations', 'vpos' ), $cap, 'vpos-organizations', array( $this, 'render_organizations' ) );
+			add_submenu_page( null, __( 'Organization', 'vpos' ), __( 'Organization', 'vpos' ), $cap, 'vpos-organization-edit', array( $this, 'render_organization_edit' ) );
 			add_submenu_page( $parent, __( 'Brands', 'vpos' ), __( 'Brands', 'vpos' ), $cap, 'vpos-brands', array( $this, 'render_brands' ) );
 			add_submenu_page( $parent, __( 'Brand', 'vpos' ), __( 'Brand', 'vpos' ), $cap, 'vpos-brand-edit', array( $this, 'render_brand_edit' ) );
 		}
 		add_submenu_page( $parent, __( 'Brand Settings', 'vpos' ), __( 'Brand Settings', 'vpos' ), $cap, 'vpos-brand-settings', array( $this, 'render_brand_settings' ) );
-		add_submenu_page( $parent, __( 'Branches', 'vpos' ), __( 'Branches', 'vpos' ), $cap, 'vpos-branches', array( $this, 'render_branches' ) );
-		add_submenu_page( $parent, __( 'Branch', 'vpos' ), __( 'Branch', 'vpos' ), $cap, 'vpos-branch-edit', array( $this, 'render_branch_edit' ) );
+		// Branches stay fully functional (still referenced by user branch
+		// scoping elsewhere), only the menu entries are hidden.
+		add_submenu_page( null, __( 'Branches', 'vpos' ), __( 'Branches', 'vpos' ), $cap, 'vpos-branches', array( $this, 'render_branches' ) );
+		add_submenu_page( null, __( 'Branch', 'vpos' ), __( 'Branch', 'vpos' ), $cap, 'vpos-branch-edit', array( $this, 'render_branch_edit' ) );
 	}
 
 	/* ---------------- views ---------------- */

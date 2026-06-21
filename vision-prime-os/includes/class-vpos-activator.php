@@ -38,6 +38,30 @@ class VPOS_Activator {
 		update_option( 'vpos_db_version', VPOS_DB_VERSION );
 	}
 
+	/**
+	 * Defensive self-heal: some deployments (manual file upload, multisite
+	 * site created before the plugin was network-activated, etc.) never
+	 * fire register_activation_hook for a given site, leaving its tables
+	 * missing while the rest of the plugin loads normally and silently
+	 * fails every insert/update. Re-running the migrator is idempotent
+	 * (dbDelta only creates what's missing), so it's safe to check on
+	 * every admin_init, throttled via a transient to avoid the dbDelta
+	 * cost on every request.
+	 */
+	public static function maybe_self_heal() {
+		if ( get_transient( 'vpos_self_heal_checked' ) ) {
+			return;
+		}
+		set_transient( 'vpos_self_heal_checked', 1, HOUR_IN_SECONDS );
+
+		global $wpdb;
+		$probe = $wpdb->prefix . 'vpos_customers';
+		$exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $probe ) );
+		if ( $exists !== $probe ) {
+			VPOS_Migrator::run_for_current_site();
+		}
+	}
+
 	public static function deactivate() {
 		// Non-destructive: ledgers, customers and audit logs are never
 		// touched by deactivation. Only scheduled jobs are cleared.
