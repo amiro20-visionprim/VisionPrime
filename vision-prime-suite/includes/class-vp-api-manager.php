@@ -37,6 +37,11 @@ class VP_Api_Manager {
 			wp_send_json_error( array( 'message' => __( 'کلید یافت نشد.', 'vp-suite' ) ) );
 		}
 
+		$detected = self::detect_provider_from_key( $row->api_key );
+		if ( $detected && $detected !== $row->provider ) {
+			wp_send_json_error( array( 'message' => sprintf( __( 'این کلید با فرمت سرویس «%s» مطابقت دارد، نه «%s». آن را حذف کنید و دوباره با سرویس درست ثبت کنید.', 'vp-suite' ), $detected, $row->provider ) ) );
+		}
+
 		$result = self::test_key( $row->provider, $row->api_key );
 
 		if ( is_wp_error( $result ) ) {
@@ -118,6 +123,29 @@ class VP_Api_Manager {
 		}
 
 		return $row ? $row->api_key : '';
+	}
+
+	/**
+	 * Key prefixes are vendor-specific and unambiguous (OpenRouter's
+	 * "sk-or-" vs OpenAI's plain "sk-" vs Anthropic's "sk-ant-" etc.), so a
+	 * key pasted under the wrong provider dropdown — the single most common
+	 * cause of "my key never connects" — can be caught and corrected before
+	 * it's ever saved, instead of silently failing every request later.
+	 */
+	public static function detect_provider_from_key( $api_key ) {
+		if ( preg_match( '/^sk-or-/', $api_key ) ) {
+			return 'openrouter';
+		}
+		if ( preg_match( '/^sk-ant-/', $api_key ) ) {
+			return 'anthropic';
+		}
+		if ( preg_match( '/^AIza/', $api_key ) ) {
+			return 'google';
+		}
+		if ( preg_match( '/^sk-(proj-)?[A-Za-z0-9]/', $api_key ) ) {
+			return 'openai';
+		}
+		return null;
 	}
 
 	public static function save_key( $provider, $scope, $label, $api_key, $meta = array(), $priority = 100 ) {

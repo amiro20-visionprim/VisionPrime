@@ -238,11 +238,32 @@ class VP_Admin {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
+
+		$submitted_provider = sanitize_key( $_POST['provider'] ?? '' );
+		$api_key             = sanitize_text_field( $_POST['api_key'] ?? '' );
+		$detected_provider   = VP_Api_Manager::detect_provider_from_key( $api_key );
+		$provider            = $detected_provider ?: $submitted_provider;
+
+		if ( $detected_provider && $detected_provider !== $submitted_provider ) {
+			add_action( 'admin_notices', function () use ( $submitted_provider, $detected_provider ) {
+				printf(
+					'<div class="notice notice-warning"><p>%s</p></div>',
+					esc_html(
+						sprintf(
+							__( 'این کلید با فرمت سرویس «%2$s» مطابقت دارد، نه «%1$s» که انتخاب کرده بودید. سرویس به‌صورت خودکار به «%2$s» تصحیح شد تا کلید واقعاً کار کند.', 'vp-suite' ),
+							$submitted_provider,
+							$detected_provider
+						)
+					)
+				);
+			} );
+		}
+
 		VP_Api_Manager::save_key(
-			sanitize_key( $_POST['provider'] ?? '' ),
+			$provider,
 			sanitize_key( $_POST['scope'] ?? 'shared' ),
 			sanitize_text_field( $_POST['label'] ?? '' ),
-			sanitize_text_field( $_POST['api_key'] ?? '' ),
+			$api_key,
 			array(),
 			isset( $_POST['priority'] ) ? absint( $_POST['priority'] ) : 100
 		);
