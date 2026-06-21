@@ -42,6 +42,10 @@ class VP_Settings {
 			'brand_voice'              => '',
 			'pre_publish_qa'           => true,
 			'competitor_auto_scan'     => false,
+			'review_auto_enabled'      => false,
+			'review_technical_enabled' => true,
+			'review_auto_categorize'   => false,
+			'review_restructure_prompt' => VP_Review_Assistant::default_restructure_prompt(),
 		);
 
 		return wp_parse_args( get_option( self::OPTION, array() ), $defaults );

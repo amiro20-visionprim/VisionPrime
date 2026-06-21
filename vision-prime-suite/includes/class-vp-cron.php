@@ -19,6 +19,7 @@ class VP_Cron {
 	const EVENT_ANOMALY      = 'vp_cron_anomaly_check';
 	const EVENT_BULK_TITLES  = 'vp_cron_process_bulk_titles';
 	const EVENT_COMPETITOR_AUTO = 'vp_cron_competitor_auto_scan';
+	const EVENT_REVIEW_AUTO     = 'vp_cron_review_auto';
 
 	public function __construct() {
 		add_filter( 'cron_schedules', array( __CLASS__, 'add_intervals' ) );
@@ -31,6 +32,7 @@ class VP_Cron {
 		add_action( self::EVENT_ANOMALY, array( $this, 'run_anomaly_check' ) );
 		add_action( self::EVENT_BULK_TITLES, array( $this, 'run_bulk_titles' ) );
 		add_action( self::EVENT_COMPETITOR_AUTO, array( $this, 'run_competitor_auto_scan' ) );
+		add_action( self::EVENT_REVIEW_AUTO, array( $this, 'run_review_auto' ) );
 	}
 
 	/**
@@ -63,10 +65,13 @@ class VP_Cron {
 		if ( ! wp_next_scheduled( self::EVENT_COMPETITOR_AUTO ) ) {
 			wp_schedule_event( time() + 900, 'daily', self::EVENT_COMPETITOR_AUTO );
 		}
+		if ( ! wp_next_scheduled( self::EVENT_REVIEW_AUTO ) ) {
+			wp_schedule_event( time() + 240, 'hourly', self::EVENT_REVIEW_AUTO );
+		}
 	}
 
 	public static function clear_schedules() {
-		foreach ( array( self::EVENT_QUEUE, self::EVENT_SOCIAL, self::EVENT_DIGEST, self::EVENT_CALENDAR, self::EVENT_RANK_SNAPSHOT, self::EVENT_ANOMALY, self::EVENT_BULK_TITLES, self::EVENT_COMPETITOR_AUTO ) as $event ) {
+		foreach ( array( self::EVENT_QUEUE, self::EVENT_SOCIAL, self::EVENT_DIGEST, self::EVENT_CALENDAR, self::EVENT_RANK_SNAPSHOT, self::EVENT_ANOMALY, self::EVENT_BULK_TITLES, self::EVENT_COMPETITOR_AUTO, self::EVENT_REVIEW_AUTO ) as $event ) {
 			$timestamp = wp_next_scheduled( $event );
 			if ( $timestamp ) {
 				wp_unschedule_event( $timestamp, $event );
@@ -147,6 +152,12 @@ class VP_Cron {
 	public function run_competitor_auto_scan() {
 		if ( class_exists( 'VP_Competitor_Analysis' ) ) {
 			VP_Competitor_Analysis::run_auto_scan();
+		}
+	}
+
+	public function run_review_auto() {
+		if ( class_exists( 'VP_Review_Assistant' ) ) {
+			VP_Review_Assistant::run_auto_review();
 		}
 	}
 

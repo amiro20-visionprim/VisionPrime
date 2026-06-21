@@ -48,6 +48,37 @@
 					</td>
 				</tr>
 				<tr>
+					<th colspan="2"><h3 style="margin:8px 0;">بازبینی محتوا (Review) — دستی و خودکار</h3></th>
+				</tr>
+				<tr>
+					<th><label>بازبینی خودکار (در کنار بازبینی دستی)</label></th>
+					<td>
+						<label><input type="checkbox" name="review_auto_enabled" <?php checked( $settings['review_auto_enabled'] ); ?>> فعال</label>
+						<p class="description">هر ساعت چند پست/محصول (حتی قدیمی) که هنوز با تنظیمات فعلی این بخش بازبینی نشده‌اند را خودکار پردازش می‌کند؛ بازبینی دستی تک‌پستی همچنان از صفحه‌ی بازبینی در دسترس است و مستقل از این گزینه کار می‌کند.</p>
+					</td>
+				</tr>
+				<tr>
+					<th><label>پرامپت یک‌دست‌سازی ساختار محتوا</label></th>
+					<td>
+						<textarea name="review_restructure_prompt" rows="5" class="large-text"><?php echo esc_textarea( $settings['review_restructure_prompt'] ); ?></textarea>
+						<p class="description">هر بار این پرامپت را تغییر دهید، در دور بعدی بازبینی خودکار، حتی محتوای قدیمی که قبلاً با نسخه‌ی قبلی پرامپت بازبینی شده، دوباره با نسخه‌ی جدید پردازش می‌شود.</p>
+					</td>
+				</tr>
+				<tr>
+					<th><label>بازبینی فنی (رفع لینک شکسته/alt گم‌شده)</label></th>
+					<td>
+						<label><input type="checkbox" name="review_technical_enabled" <?php checked( $settings['review_technical_enabled'] ); ?>> فعال</label>
+						<p class="description">مشکلات فنی رایج ناشی از درج دستی محتوا (لینک شکسته، تصویر بدون alt) را شناسایی و خودکار رفع می‌کند.</p>
+					</td>
+				</tr>
+				<tr>
+					<th><label>دسته‌بندی خودکار مقالات</label></th>
+					<td>
+						<label><input type="checkbox" name="review_auto_categorize" <?php checked( $settings['review_auto_categorize'] ); ?>> فعال</label>
+						<p class="description">دسته‌بندی‌های واقعی و موجود همین سایت را شناسایی و بهترین تطابق را برای هر مقاله انتخاب می‌کند؛ هرگز دسته‌ی جدیدی نمی‌سازد.</p>
+					</td>
+				</tr>
+				<tr>
 					<th><label>تحلیل خودکار رقبا (بر اساس کلمات کلیدی Search Console)</label></th>
 					<td>
 						<label><input type="checkbox" name="competitor_auto_scan" <?php checked( $settings['competitor_auto_scan'] ); ?>> فعال</label>

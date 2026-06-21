@@ -199,7 +199,7 @@ class VP_Admin {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
-		$fields = array( 'default_provider', 'article_prompt', 'product_prompt', 'seo_prompt', 'competitor_prompt', 'calendar_smart_prompt', 'brand_voice' );
+		$fields = array( 'default_provider', 'article_prompt', 'product_prompt', 'seo_prompt', 'competitor_prompt', 'calendar_smart_prompt', 'review_restructure_prompt', 'brand_voice' );
 		foreach ( $fields as $field ) {
 			if ( isset( $_POST[ $field ] ) ) {
 				VP_Settings::update( $field, wp_kses_post( wp_unslash( $_POST[ $field ] ) ) );
@@ -225,6 +225,9 @@ class VP_Admin {
 		VP_Settings::update( 'auto_social_distribution', ! empty( $_POST['auto_social_distribution'] ) );
 		VP_Settings::update( 'pre_publish_qa', ! empty( $_POST['pre_publish_qa'] ) );
 		VP_Settings::update( 'competitor_auto_scan', ! empty( $_POST['competitor_auto_scan'] ) );
+		VP_Settings::update( 'review_auto_enabled', ! empty( $_POST['review_auto_enabled'] ) );
+		VP_Settings::update( 'review_technical_enabled', ! empty( $_POST['review_technical_enabled'] ) );
+		VP_Settings::update( 'review_auto_categorize', ! empty( $_POST['review_auto_categorize'] ) );
 
 		add_action( 'admin_notices', function () {
 			echo '<div class="notice notice-success"><p>تنظیمات ذخیره شد.</p></div>';
