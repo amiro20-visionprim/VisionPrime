@@ -30,3 +30,13 @@
 .vp-log-list li { padding: 8px 0; border-bottom: 1px solid #f1f1f1; font-size: 13px; }
 .vp-log-time { display: block; color: #888; font-size: 11px; }
 .vp-catalog { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.vp-step {
+	padding: 8px 14px;
+	border-radius: 999px;
+	font-size: 12px;
+	background: #f1f1f1;
+	color: #888;
+	border: 1px solid #e2e4e7;
+}
+.vp-step-active { background: #dbeafe; color: #1e40af; border-color: #93c5fd; font-weight: 700; }
+.vp-step-done { background: #dcfce7; color: #166534; }

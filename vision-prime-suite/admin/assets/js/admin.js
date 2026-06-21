@@ -478,6 +478,18 @@
 			}).always(function () { $btn.prop('disabled', false); });
 		});
 
+		// --- Generic copy-to-clipboard for "data-copy-target" buttons (e.g. GSC redirect URI) ---
+		$(document).on('click', '.vp-copy-btn', function () {
+			var $btn = $(this);
+			var text = $('#' + $btn.data('copy-target')).text().trim();
+			if (!text) return;
+			navigator.clipboard.writeText(text).then(function () {
+				var original = $btn.text();
+				$btn.text('کپی شد ✓');
+				setTimeout(function () { $btn.text(original); }, 1500);
+			});
+		});
+
 		// --- Show/hide toggle for sensitive fields (defeats browser password-manager autofill confusion) ---
 		$(document).on('click', '.vp-toggle-visibility', function () {
 			var $field = $('#' + $(this).data('target'));
