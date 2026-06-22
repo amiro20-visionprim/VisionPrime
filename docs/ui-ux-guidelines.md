@@ -1,5 +1,30 @@
 # VisionPrime OS — UI/UX Guidelines
 
+## 0. Shared Component Library (`packages/ui`)
+
+Every Admin OS (and Customer Club) screen is built exclusively from this
+shared library — no module defines its own button, table, modal, or form
+control styling.
+
+- **Design tokens** (`tokens.ts`): `colors`, `statusColors`, `spacing`,
+  `radius`, `typography`, `shadows`, `breakpoints`.
+- **Actions**: `Button`, `IconButton`.
+- **Form primitives** (`form/`): `Input`, `Textarea`, `Select`,
+  `MultiSelect`, `Switch`, `Checkbox`, `Radio`, `FormField`.
+- **Display**: `Badge`, `StatusBadge`, `Card`, `MetricCard`, `Skeleton`.
+- **States**: `LoadingState`, `EmptyState`, `ErrorState`.
+- **Navigation/structure**: `PageHeader`, `Tabs`, `DataTable`,
+  `Pagination`, `FilterBar`.
+- **Overlays**: `Modal`, `ConfirmDialog`, `Drawer`, `Tooltip`,
+  `DropdownMenu`, `ToastProvider`/`useToast`.
+- **Permissions**: `Can` — placeholder UI gate that hides actions based
+  on a permission string (`userPermissions` prop); real auth-backed
+  enforcement lands in Phase 03 per `docs/permissions.md`.
+
+All of the above are exported from `@visionprime/ui`'s root entry point.
+The `/design-system` page in `apps/admin` renders every component live
+for visual verification.
+
 ## 1. Admin OS UX Principles
 
 - Admin OS is an internal operations tool: optimize for speed and clarity
