@@ -278,6 +278,23 @@ describe("Phase 10: loyalty, points, rewards", () => {
     expect(status).toBeInstanceOf(Error);
   });
 
+  it("admin can fetch a customer's loyalty status via the dedicated endpoint", async () => {
+    const client = createFakeWooCommerceApiClient({ fetchOrders: async () => [remoteOrder({ total: "150.00" })] });
+    const { harness, token } = await buildAuthedHarness(ADMIN_PERMISSIONS, { wooCommerceClient: client });
+    await createProgramWithTiers(harness, token);
+    await request(harness.app).post("/api/admin/orders/sync-from-wordpress").set("Authorization", `Bearer ${token}`).send();
+
+    const customers = await harness.customersRepository.list({ page: 1, pageSize: 10 });
+    const buyer = customers.rows.find((c) => c.primary_email === "points-buyer@example.com")!;
+
+    const res = await request(harness.app)
+      .get(`/api/admin/loyalty/customer/${buyer.id}/status`)
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.currentTier.name).toBe("Silver");
+  });
+
   it("denies reward:create to a caller lacking the permission", async () => {
     const { harness, token } = await buildAuthedHarness(["reward:view"]);
     const res = await request(harness.app)

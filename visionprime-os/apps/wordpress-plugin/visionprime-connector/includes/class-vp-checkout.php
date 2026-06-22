@@ -6,13 +6,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * WooCommerce checkout wallet/reward reservation integration (Phase 09).
  *
- * Reservation model: applying wallet credit at checkout NEVER debits the
- * wallet directly — it only creates a reservation on the VisionPrime
- * backend (see /docs/phase-09-checkout-wallet-reward-reservations.md).
- * The ledger debit only happens when the order's payment completes
- * (confirm); a failed/cancelled order releases the reservation instead.
- * Reward checkout is base-structure only — every reward AJAX action
- * reports "not available yet" until a reward catalog ships.
+ * Reservation model: applying wallet credit or a reward claim at
+ * checkout NEVER mutates the wallet/points ledger or reward claim
+ * state directly — it only creates a reservation on the VisionPrime
+ * backend (see /docs/phase-09-checkout-wallet-reward-reservations.md
+ * and /docs/phase-10-loyalty-points-rewards.md). The financial/reward
+ * effect only happens when the order's payment completes (confirm); a
+ * failed/cancelled order releases the reservation instead.
  *
  * The cart_key used to look up a reservation across validate → reserve →
  * release → confirm is the WooCommerce session's customer/cart id, which
@@ -22,9 +22,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class VP_Checkout {
 
-	const SESSION_RESERVATION_KEY = 'vp_wallet_reservation';
-	const ORDER_META_CART_KEY     = '_vp_wallet_cart_key';
-	const ORDER_META_RESERVATION  = '_vp_wallet_reservation_id';
+	const SESSION_RESERVATION_KEY        = 'vp_wallet_reservation';
+	const ORDER_META_CART_KEY            = '_vp_wallet_cart_key';
+	const ORDER_META_RESERVATION         = '_vp_wallet_reservation_id';
+	const SESSION_REWARD_RESERVATION_KEY = 'vp_reward_reservation';
+	const ORDER_META_REWARD_CART_KEY     = '_vp_reward_cart_key';
+	const ORDER_META_REWARD_RESERVATION  = '_vp_reward_reservation_id';
 
 	/** @var VP_Settings */
 	private $settings;
@@ -75,6 +78,13 @@ class VP_Checkout {
 		add_action( 'woocommerce_payment_complete', array( $this, 'confirm_reservation_for_order' ) );
 		add_action( 'woocommerce_order_status_cancelled', array( $this, 'release_reservation_for_order' ) );
 		add_action( 'woocommerce_order_status_failed', array( $this, 'release_reservation_for_order' ) );
+
+		// Same reservation lifecycle for an applied reward claim.
+		add_action( 'woocommerce_cart_calculate_fees', array( $this, 'apply_reward_fee' ) );
+		add_action( 'woocommerce_checkout_create_order', array( $this, 'stamp_order_with_reward_reservation' ), 10, 2 );
+		add_action( 'woocommerce_payment_complete', array( $this, 'confirm_reward_reservation_for_order' ) );
+		add_action( 'woocommerce_order_status_cancelled', array( $this, 'release_reward_reservation_for_order' ) );
+		add_action( 'woocommerce_order_status_failed', array( $this, 'release_reward_reservation_for_order' ) );
 	}
 
 	/* ---------------------------------------------------------------- */
@@ -243,12 +253,41 @@ class VP_Checkout {
 	}
 
 	/* ---------------------------------------------------------------- */
-	/* Reward AJAX — base structure only, see checkout.service.ts        */
+	/* Reward AJAX                                                       */
 	/* ---------------------------------------------------------------- */
 
 	public function handle_apply_reward_to_cart(): void {
 		$this->auth->require_customer_ajax();
-		wp_send_json_error( array( 'message' => __( 'Rewards are not available yet.', 'visionprime-connector' ) ) );
+
+		if ( ! $this->settings->is_rewards_enabled() ) {
+			wp_send_json_error( array( 'message' => __( 'Rewards are not enabled.', 'visionprime-connector' ) ) );
+		}
+
+		$claim_id = isset( $_REQUEST['claimId'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['claimId'] ) ) : '';
+		if ( ! $claim_id ) {
+			wp_send_json_error( array( 'message' => __( 'No reward claim specified.', 'visionprime-connector' ) ) );
+		}
+
+		$cart_key = $this->get_cart_key();
+
+		// Never trust the frontend claim alone — validate against the
+		// backend-computed claim ownership/expiry state first.
+		$validation = $this->api_client->post( '/checkout/reward/validate', array( 'cartKey' => $cart_key, 'rewardId' => $claim_id ) );
+		if ( ! $validation['ok'] ) {
+			wp_send_json_error( array( 'message' => $validation['message'] ?? __( 'Could not validate this reward.', 'visionprime-connector' ) ) );
+		}
+		if ( empty( $validation['body']['valid'] ) ) {
+			wp_send_json_error( array( 'message' => $validation['body']['message'] ?? __( 'This reward cannot be applied.', 'visionprime-connector' ) ) );
+		}
+
+		$reservation = $this->api_client->post( '/checkout/reward/reserve', array( 'cartKey' => $cart_key, 'rewardId' => $claim_id ) );
+		if ( ! $reservation['ok'] ) {
+			wp_send_json_error( array( 'message' => $reservation['message'] ?? __( 'Could not apply this reward.', 'visionprime-connector' ) ) );
+		}
+
+		WC()->session->set( self::SESSION_REWARD_RESERVATION_KEY, $reservation['body'] );
+
+		wp_send_json_success( array( 'reservation' => $reservation['body'] ) );
 	}
 
 	public function handle_remove_reward_from_cart(): void {
@@ -258,16 +297,106 @@ class VP_Checkout {
 		if ( ! $result['ok'] ) {
 			wp_send_json_error( array( 'message' => $result['message'] ?? __( 'Could not remove the reward.', 'visionprime-connector' ) ) );
 		}
+
+		if ( function_exists( 'WC' ) && WC()->session ) {
+			WC()->session->__unset( self::SESSION_REWARD_RESERVATION_KEY );
+		}
+
 		wp_send_json_success( $result['body'] );
 	}
 
 	public function handle_validate_checkout_reward(): void {
 		$this->auth->require_customer_ajax();
-		$cart_key = $this->get_cart_key();
-		$result   = $this->api_client->post( '/checkout/reward/validate', array( 'cartKey' => $cart_key ) );
+		$cart_key  = $this->get_cart_key();
+		$claim_id  = isset( $_REQUEST['claimId'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['claimId'] ) ) : '';
+		$payload   = array( 'cartKey' => $cart_key );
+		if ( $claim_id ) {
+			$payload['rewardId'] = $claim_id;
+		}
+		$result = $this->api_client->post( '/checkout/reward/validate', $payload );
 		if ( ! $result['ok'] ) {
 			wp_send_json_error( array( 'message' => $result['message'] ?? __( 'Could not validate the reward.', 'visionprime-connector' ) ) );
 		}
 		wp_send_json_success( $result['body'] );
+	}
+
+	/** Marks the applied reward reservation in the cart totals without
+	 * mutating any ledger — same non-monetary-until-confirm contract as
+	 * the wallet fee above. Reward fulfillment (coupon issuance, etc.)
+	 * happens server-side once the reservation is confirmed. */
+	public function apply_reward_fee( $cart ): void {
+		if ( is_admin() && ! defined( 'DOING_AJAX' ) ) {
+			return;
+		}
+		if ( ! function_exists( 'WC' ) || ! WC()->session ) {
+			return;
+		}
+
+		$reservation = WC()->session->get( self::SESSION_REWARD_RESERVATION_KEY );
+		if ( empty( $reservation ) || 'active' !== ( $reservation['status'] ?? '' ) ) {
+			return;
+		}
+
+		$cart->add_fee( __( 'Reward Applied', 'visionprime-connector' ), 0, false );
+	}
+
+	/** @param WC_Order $order */
+	public function stamp_order_with_reward_reservation( $order, $data ): void {
+		if ( ! function_exists( 'WC' ) || ! WC()->session ) {
+			return;
+		}
+
+		$reservation = WC()->session->get( self::SESSION_REWARD_RESERVATION_KEY );
+		if ( empty( $reservation ) ) {
+			return;
+		}
+
+		$order->update_meta_data( self::ORDER_META_REWARD_CART_KEY, $this->get_cart_key() );
+		$order->update_meta_data( self::ORDER_META_REWARD_RESERVATION, $reservation['id'] ?? '' );
+	}
+
+	public function confirm_reward_reservation_for_order( $order_id ): void {
+		$order = wc_get_order( $order_id );
+		if ( ! $order ) {
+			return;
+		}
+		$cart_key = $order->get_meta( self::ORDER_META_REWARD_CART_KEY );
+		if ( ! $cart_key ) {
+			return;
+		}
+
+		$result = $this->api_client->post(
+			'/checkout/reward/confirm',
+			array( 'cartKey' => $cart_key, 'woocommerceOrderId' => (string) $order_id )
+		);
+
+		if ( ! $result['ok'] ) {
+			// Confirm failing must not block order completion — flag for
+			// manual reconciliation via the order notes instead.
+			$this->logger->error( 'Reward reservation confirm failed', array( 'orderId' => $order_id, 'message' => $result['message'] ?? null ) );
+			$order->add_order_note( __( 'VisionPrime reward could not be confirmed automatically. Please check manually.', 'visionprime-connector' ) );
+			return;
+		}
+
+		if ( function_exists( 'WC' ) && WC()->session ) {
+			WC()->session->__unset( self::SESSION_REWARD_RESERVATION_KEY );
+		}
+	}
+
+	public function release_reward_reservation_for_order( $order_id ): void {
+		$order = wc_get_order( $order_id );
+		if ( ! $order ) {
+			return;
+		}
+		$cart_key = $order->get_meta( self::ORDER_META_REWARD_CART_KEY );
+		if ( ! $cart_key ) {
+			return;
+		}
+
+		$this->api_client->post( '/checkout/reward/release', array( 'cartKey' => $cart_key ) );
+
+		if ( function_exists( 'WC' ) && WC()->session ) {
+			WC()->session->__unset( self::SESSION_REWARD_RESERVATION_KEY );
+		}
 	}
 }

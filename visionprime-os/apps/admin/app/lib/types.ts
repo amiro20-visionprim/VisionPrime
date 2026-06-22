@@ -306,3 +306,100 @@ export interface WalletReservation {
   woocommerceOrderId: string | null;
   createdAt: string;
 }
+
+export interface LoyaltyProgram {
+  id: string;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  pointsPerCurrencyUnit: number;
+  config: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LoyaltyTier {
+  id: string;
+  programId: string;
+  name: string;
+  minLifetimePoints: number;
+  sortOrder: number;
+  benefits: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LoyaltyRule {
+  id: string;
+  programId: string;
+  name: string;
+  ruleType: string;
+  config: Record<string, unknown>;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CustomerLoyaltyStatus {
+  customerId: string;
+  programId: string | null;
+  currentTier: LoyaltyTier | null;
+  nextTier: LoyaltyTier | null;
+  lifetimePoints: number;
+  pointsToNextTier: number | null;
+}
+
+export interface PointsBalance {
+  customerId: string;
+  balance: number;
+  lifetimePoints: number;
+}
+
+export interface PointsLedgerEntry {
+  id: string;
+  customerId: string;
+  type: string;
+  direction: "credit" | "debit";
+  points: number;
+  reason: string;
+  referenceType: string | null;
+  referenceId: string | null;
+  reversedEntryId: string | null;
+  createdAt: string;
+}
+
+export type RewardType = "coupon" | "free_item" | "other";
+export type RewardClaimStatus = "claimed" | "redeemed" | "expired" | "cancelled";
+
+export interface Reward {
+  id: string;
+  name: string;
+  description: string | null;
+  rewardType: RewardType;
+  pointsCost: number;
+  couponConfig: Record<string, unknown>;
+  claimValidityDays: number;
+  isActive: boolean;
+  maxClaims: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RewardClaim {
+  id: string;
+  rewardId: string;
+  customerId: string;
+  status: RewardClaimStatus;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface RewardRedemption {
+  id: string;
+  rewardClaimId: string;
+  rewardId: string;
+  customerId: string;
+  cartKey: string | null;
+  woocommerceOrderId: string | null;
+  createdAt: string;
+}

@@ -60,6 +60,8 @@ class VP_Ajax {
 		add_action( 'wp_ajax_vp_get_rewards', array( $this, 'handle_get_rewards' ) );
 		add_action( 'wp_ajax_vp_get_tier', array( $this, 'handle_get_tier' ) );
 		add_action( 'wp_ajax_vp_refresh_account_data', array( $this, 'handle_refresh_account_data' ) );
+		add_action( 'wp_ajax_vp_claim_reward', array( $this, 'handle_claim_reward' ) );
+		add_action( 'wp_ajax_vp_redeem_reward', array( $this, 'handle_redeem_reward' ) );
 	}
 
 	/* ---------------------------------------------------------------- */
@@ -174,6 +176,44 @@ class VP_Ajax {
 			wp_send_json_success( array( 'enabled' => false, 'tier' => null ) );
 		}
 		$this->reply_from_backend( '/customer/tier' );
+	}
+
+	public function handle_claim_reward(): void {
+		$this->auth->require_customer_ajax();
+		if ( ! $this->settings->is_rewards_enabled() ) {
+			wp_send_json_error( array( 'message' => __( 'Rewards are not enabled.', 'visionprime-connector' ) ) );
+		}
+
+		$reward_id = isset( $_REQUEST['rewardId'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['rewardId'] ) ) : '';
+		if ( ! $reward_id ) {
+			wp_send_json_error( array( 'message' => __( 'No reward specified.', 'visionprime-connector' ) ) );
+		}
+
+		$result = $this->api_client->post( "/rewards/{$reward_id}/claim", array() );
+		if ( ! $result['ok'] ) {
+			wp_send_json_error( array( 'message' => $result['message'] ?? __( 'Could not claim this reward.', 'visionprime-connector' ) ) );
+		}
+
+		wp_send_json_success( $result['body'] );
+	}
+
+	public function handle_redeem_reward(): void {
+		$this->auth->require_customer_ajax();
+		if ( ! $this->settings->is_rewards_enabled() ) {
+			wp_send_json_error( array( 'message' => __( 'Rewards are not enabled.', 'visionprime-connector' ) ) );
+		}
+
+		$claim_id = isset( $_REQUEST['claimId'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['claimId'] ) ) : '';
+		if ( ! $claim_id ) {
+			wp_send_json_error( array( 'message' => __( 'No reward claim specified.', 'visionprime-connector' ) ) );
+		}
+
+		$result = $this->api_client->post( "/rewards/{$claim_id}/redeem", array() );
+		if ( ! $result['ok'] ) {
+			wp_send_json_error( array( 'message' => $result['message'] ?? __( 'Could not redeem this reward.', 'visionprime-connector' ) ) );
+		}
+
+		wp_send_json_success( $result['body'] );
 	}
 
 	public function handle_refresh_account_data(): void {

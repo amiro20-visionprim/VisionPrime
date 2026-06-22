@@ -27,9 +27,22 @@ function requireAuthContext(req: Request) {
   return req.context.auth;
 }
 
+const customerIdParamSchema = z.object({ customerId: z.string().uuid() });
+
 export function createLoyaltyRouter(deps: LoyaltyControllerDeps): Router {
   const router = Router();
   const requireAuth = createRequireAuth(deps.accessSecret);
+
+  router.get(
+    "/customer/:customerId/status",
+    requireAuth,
+    requirePermission("loyalty:view"),
+    asyncHandler(async (req, res) => {
+      const params = customerIdParamSchema.parse({ customerId: req.params.customerId });
+      const status = await deps.loyaltyService.getCustomerStatus(params.customerId);
+      sendSuccess(res, status);
+    }),
+  );
 
   router.get(
     "/programs",

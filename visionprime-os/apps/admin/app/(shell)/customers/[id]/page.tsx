@@ -21,15 +21,24 @@ import {
 import { apiClient } from "../../../lib/api-client";
 import { useAuth } from "../../../lib/auth-client";
 import { friendlyErrorMessage } from "../../../lib/error-message";
-import { Customer360, Customer360Order, Wallet, WalletReservation } from "../../../lib/types";
+import {
+  Customer360,
+  Customer360Order,
+  CustomerLoyaltyStatus,
+  PointsBalance,
+  RewardClaim,
+  Wallet,
+  WalletReservation,
+} from "../../../lib/types";
 
-type TabKey = "overview" | "metrics" | "orders" | "notes" | "tags" | "identities" | "events" | "reservations";
+type TabKey = "overview" | "metrics" | "orders" | "notes" | "tags" | "identities" | "events" | "reservations" | "loyalty";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "overview", label: "Overview" },
   { key: "metrics", label: "Metrics" },
   { key: "orders", label: "Orders" },
   { key: "reservations", label: "Reservations" },
+  { key: "loyalty", label: "Loyalty" },
   { key: "notes", label: "Notes" },
   { key: "tags", label: "Tags" },
   { key: "identities", label: "Identities" },
@@ -57,6 +66,15 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
 
   const [reservations, setReservations] = useState<WalletReservation[]>([]);
   const [isLoadingReservations, setIsLoadingReservations] = useState(true);
+
+  const [pointsBalance, setPointsBalance] = useState<PointsBalance | null>(null);
+  const [isLoadingPoints, setIsLoadingPoints] = useState(true);
+
+  const [loyaltyStatus, setLoyaltyStatus] = useState<CustomerLoyaltyStatus | null>(null);
+  const [isLoadingLoyalty, setIsLoadingLoyalty] = useState(true);
+
+  const [rewardClaims, setRewardClaims] = useState<RewardClaim[]>([]);
+  const [isLoadingRewardClaims, setIsLoadingRewardClaims] = useState(true);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -96,6 +114,42 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
         .finally(() => setIsLoadingReservations(false));
     } else {
       setIsLoadingReservations(false);
+    }
+  }, [params.id, userPermissions]);
+
+  useEffect(() => {
+    if (!userPermissions || userPermissions.includes("points:view")) {
+      apiClient
+        .get<PointsBalance>(`/api/admin/points/customer/${params.id}`)
+        .then(setPointsBalance)
+        .catch(() => setPointsBalance(null))
+        .finally(() => setIsLoadingPoints(false));
+    } else {
+      setIsLoadingPoints(false);
+    }
+  }, [params.id, userPermissions]);
+
+  useEffect(() => {
+    if (!userPermissions || userPermissions.includes("loyalty:view")) {
+      apiClient
+        .get<CustomerLoyaltyStatus>(`/api/admin/loyalty/customer/${params.id}/status`)
+        .then(setLoyaltyStatus)
+        .catch(() => setLoyaltyStatus(null))
+        .finally(() => setIsLoadingLoyalty(false));
+    } else {
+      setIsLoadingLoyalty(false);
+    }
+  }, [params.id, userPermissions]);
+
+  useEffect(() => {
+    if (!userPermissions || userPermissions.includes("reward_claim:view")) {
+      apiClient
+        .getWithMeta<RewardClaim[]>(`/api/admin/reward-claims?customerId=${params.id}&pageSize=50`)
+        .then((result) => setRewardClaims(result.data))
+        .catch(() => setRewardClaims([]))
+        .finally(() => setIsLoadingRewardClaims(false));
+    } else {
+      setIsLoadingRewardClaims(false);
     }
   }, [params.id, userPermissions]);
 
@@ -239,6 +293,51 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
                 </li>
               ))}
             </ul>
+          </div>
+        ) : null}
+
+        {activeTab === "loyalty" ? (
+          <div style={{ maxWidth: 720 }}>
+            <Can permission="points:view" userPermissions={userPermissions}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+                <MetricCard label="Points Balance" value={pointsBalance ? pointsBalance.balance : "—"} isLoading={isLoadingPoints} />
+                <MetricCard label="Lifetime Points" value={pointsBalance ? pointsBalance.lifetimePoints : "—"} isLoading={isLoadingPoints} />
+              </div>
+            </Can>
+
+            <Can permission="loyalty:view" userPermissions={userPermissions}>
+              <div style={{ marginBottom: "1.5rem" }}>
+                {isLoadingLoyalty ? <p>Loading tier…</p> : null}
+                {!isLoadingLoyalty && loyaltyStatus ? (
+                  <>
+                    <p>
+                      <strong>Current tier:</strong> {loyaltyStatus.currentTier?.name ?? "—"}
+                    </p>
+                    <p>
+                      <strong>Next tier:</strong>{" "}
+                      {loyaltyStatus.nextTier
+                        ? `${loyaltyStatus.nextTier.name} (${loyaltyStatus.pointsToNextTier} points to go)`
+                        : "—"}
+                    </p>
+                  </>
+                ) : null}
+              </div>
+            </Can>
+
+            <Can permission="reward_claim:view" userPermissions={userPermissions}>
+              <div>
+                <h3 style={{ fontSize: "0.95rem", marginBottom: "0.5rem" }}>Reward Claims</h3>
+                {isLoadingRewardClaims ? <p>Loading…</p> : null}
+                {!isLoadingRewardClaims && rewardClaims.length === 0 ? <p>No reward claims yet.</p> : null}
+                <ul style={{ listStyle: "none", padding: 0 }}>
+                  {rewardClaims.map((claim) => (
+                    <li key={claim.id} style={{ padding: "0.5rem 0", borderBottom: "1px solid #e5e7eb" }}>
+                      <StatusBadge status={claim.status} /> · Expires {new Date(claim.expiresAt).toLocaleString()}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Can>
           </div>
         ) : null}
 

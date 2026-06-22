@@ -35,20 +35,21 @@
 
 		switch ( component ) {
 			case 'wallet':
-				html = '<p class="vp-wallet-balance">' + vpEscapeHtml( String( data.balanceCents ?? 0 ) ) + '</p>';
+				html = '<p class="vp-wallet-balance">' + vpEscapeHtml( String( data.availableBalanceCents ?? 0 ) ) + '</p>';
 				break;
 			case 'points':
 				html = data.enabled
-					? '<p class="vp-points-balance">' + vpEscapeHtml( String( data.balanceCents ?? 0 ) ) + '</p>'
+					? '<p class="vp-points-balance">' + vpEscapeHtml( String( data.balance ?? 0 ) ) + '</p>' +
+					  '<p class="vp-points-lifetime">' + vpEscapeHtml( String( data.lifetimePoints ?? 0 ) ) + '</p>'
 					: '<p class="vp-disabled">' + vpEscapeHtml( visionprimePublic.genericError ) + '</p>';
 				break;
 			case 'rewards':
-				html = data.enabled
-					? '<ul class="vp-rewards-list"></ul>'
-					: '<p class="vp-disabled"></p>';
+				html = data.enabled ? '<ul class="vp-rewards-list"></ul>' : '<p class="vp-disabled"></p>';
 				break;
 			case 'tier':
-				html = '<p class="vp-tier">' + vpEscapeHtml( data.tier ? String( data.tier ) : '' ) + '</p>';
+				html = data.enabled
+					? '<p class="vp-tier">' + vpEscapeHtml( data.currentTierName ? String( data.currentTierName ) : '' ) + '</p>'
+					: '<p class="vp-disabled"></p>';
 				break;
 			case 'club':
 			default:
@@ -65,6 +66,70 @@
 		if ( 'club' === component ) {
 			$container.find( '.vp-club-data' ).text( JSON.stringify( data ) );
 		}
+
+		if ( 'rewards' === component && data.enabled ) {
+			renderRewardsList( $container, data );
+		}
+	}
+
+	/** Renders claimed + available rewards into the [visionprime_rewards]
+	 * container, with one claim/redeem button per row — every list item's
+	 * customer-controlled text (reward name) goes through vpEscapeHtml. */
+	function renderRewardsList( $container, data ) {
+		var $list = $container.find( '.vp-rewards-list' );
+		var html  = '';
+
+		( data.claimed || [] ).forEach( function ( claim ) {
+			html += '<li class="vp-reward-claim" data-vp-claim-id="' + vpEscapeHtml( claim.claimId ) + '">';
+			html += '<span class="vp-reward-name">' + vpEscapeHtml( claim.name ) + '</span> ';
+			html += '<span class="vp-reward-status">' + vpEscapeHtml( claim.status ) + '</span>';
+			if ( 'claimed' === claim.status ) {
+				html += ' <button type="button" class="button vp-reward-redeem">Redeem</button>';
+			}
+			html += '</li>';
+		} );
+
+		( data.available || [] ).forEach( function ( reward ) {
+			html += '<li class="vp-reward-available" data-vp-reward-id="' + vpEscapeHtml( reward.id ) + '">';
+			html += '<span class="vp-reward-name">' + vpEscapeHtml( reward.name ) + '</span> ';
+			html += '<span class="vp-reward-cost">' + vpEscapeHtml( String( reward.pointsCost ) ) + '</span>';
+			html += ' <button type="button" class="button vp-reward-claim">Claim</button>';
+			html += '</li>';
+		} );
+
+		$list.html( html );
+	}
+
+	function claimReward( $container, rewardId ) {
+		var nonce = $container.data( 'vp-nonce' );
+
+		$.post( visionprimePublic.ajaxUrl, { action: 'vp_claim_reward', nonce: nonce, rewardId: rewardId } )
+			.done( function ( response ) {
+				if ( response && response.success ) {
+					loadComponent( $container );
+				} else {
+					renderError( $container, ( response && response.data && response.data.message ) || visionprimePublic.genericError );
+				}
+			} )
+			.fail( function () {
+				renderError( $container, visionprimePublic.genericError );
+			} );
+	}
+
+	function redeemReward( $container, claimId ) {
+		var nonce = $container.data( 'vp-nonce' );
+
+		$.post( visionprimePublic.ajaxUrl, { action: 'vp_redeem_reward', nonce: nonce, claimId: claimId } )
+			.done( function ( response ) {
+				if ( response && response.success ) {
+					loadComponent( $container );
+				} else {
+					renderError( $container, ( response && response.data && response.data.message ) || visionprimePublic.genericError );
+				}
+			} )
+			.fail( function () {
+				renderError( $container, visionprimePublic.genericError );
+			} );
 	}
 
 	function loadComponent( $container ) {
@@ -230,6 +295,18 @@
 
 		$( document ).on( 'click', '.vp-wallet-remove', function () {
 			removeWalletCredit( $( this ).closest( '.vp-checkout-wallet' ) );
+		} );
+
+		$( document ).on( 'click', '.vp-reward-claim', function () {
+			var $container = $( this ).closest( '.vp-component' );
+			var rewardId    = $( this ).closest( 'li' ).data( 'vp-reward-id' );
+			claimReward( $container, rewardId );
+		} );
+
+		$( document ).on( 'click', '.vp-reward-redeem', function () {
+			var $container = $( this ).closest( '.vp-component' );
+			var claimId     = $( this ).closest( 'li' ).data( 'vp-claim-id' );
+			redeemReward( $container, claimId );
 		} );
 	} );
 } )( jQuery );
