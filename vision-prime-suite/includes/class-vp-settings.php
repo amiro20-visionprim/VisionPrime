@@ -46,6 +46,7 @@ class VP_Settings {
 			'review_technical_enabled' => true,
 			'review_auto_categorize'   => false,
 			'review_restructure_prompt' => VP_Review_Assistant::default_restructure_prompt(),
+			'max_tokens'        => 4096,
 		);
 
 		return wp_parse_args( get_option( self::OPTION, array() ), $defaults );

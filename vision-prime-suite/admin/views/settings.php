@@ -19,6 +19,23 @@
 		</div>
 
 		<div class="vp-card">
+			<h2>سقف توکن خروجی</h2>
+			<form method="post">
+				<?php wp_nonce_field( 'vp_suite_save_settings', 'vp_suite_settings_nonce' ); ?>
+				<table class="form-table">
+					<tr>
+						<th><label>حداکثر توکن خروجی هر درخواست</label></th>
+						<td>
+							<input type="number" name="max_tokens" value="<?php echo esc_attr( $settings['max_tokens'] ); ?>" min="256" max="32000" step="256">
+							<p class="description">اگر اعتبار حساب OpenRouter کم باشد و خطای «۴۰۲ — نیاز به اعتبار بیشتر» بگیرید، این عدد را کم کنید. عدد بزرگ‌تر یعنی محتوای طولانی‌تر و کامل‌تر اما نیاز به اعتبار بیشتر؛ عدد کوچک‌تر ریسک قطع‌شدن محتوای بلند را افزایش می‌دهد. مقدار پیشنهادی برای اکثر مقالات: ۴۰۰۰ تا ۶۰۰۰.</p>
+						</td>
+					</tr>
+				</table>
+				<p><button class="button button-primary" type="submit">ذخیره</button></p>
+			</form>
+		</div>
+
+		<div class="vp-card">
 			<h2>افزودن کلید جدید</h2>
 			<form method="post">
 				<?php wp_nonce_field( 'vp_suite_save_apikey', 'vp_suite_apikey_nonce' ); ?>

@@ -253,8 +253,9 @@ class VP_Api_Manager {
 		}
 
 		$body = array(
-			'model'    => $model,
-			'messages' => $messages,
+			'model'      => $model,
+			'messages'   => $messages,
+			'max_tokens' => (int) VP_Settings::get( 'max_tokens', 4096 ),
 		);
 
 		$headers = array(

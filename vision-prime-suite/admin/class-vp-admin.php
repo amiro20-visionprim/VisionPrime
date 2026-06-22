@@ -213,6 +213,9 @@ class VP_Admin {
 		if ( isset( $_POST['log_retention_days'] ) ) {
 			VP_Settings::update( 'log_retention_days', absint( $_POST['log_retention_days'] ) );
 		}
+		if ( isset( $_POST['max_tokens'] ) ) {
+			VP_Settings::update( 'max_tokens', min( 32000, max( 256, absint( $_POST['max_tokens'] ) ) ) );
+		}
 		if ( isset( $_POST['gsc_client_id'] ) ) {
 			VP_Settings::update( 'gsc_client_id', sanitize_text_field( wp_unslash( $_POST['gsc_client_id'] ) ) );
 		}
