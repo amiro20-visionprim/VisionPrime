@@ -60,6 +60,9 @@ import { createDbWalletRepository } from "./modules/wallet/wallet.repository.db"
 import { WalletService } from "./modules/wallet/wallet.service";
 import { createWalletRouter } from "./modules/wallet/wallet.controller";
 
+import { WpPluginService } from "./modules/wp-plugin/wp-plugin.service";
+import { createWpPluginRouter } from "./modules/wp-plugin/wp-plugin.controller";
+
 export interface CreateAppOptions {
   db: Db;
   jwt: AuthServiceConfig;
@@ -207,6 +210,21 @@ export function createApp(logger: Logger, options: CreateAppOptions): Express {
   app.use(
     "/api/admin/wallets",
     createWalletRouter({ walletService, accessSecret: jwt.accessSecret }),
+  );
+
+  // --- Phase 08: WordPress plugin customer-facing API ---
+  // Authenticated by plugin API key + HMAC signature (see
+  // wp-plugin.middleware.ts), never by the admin JWT — this is the only
+  // surface the WordPress plugin's PHP layer calls.
+  const wpPluginService = new WpPluginService({ customersRepository, walletService });
+  app.use(
+    "/api/wp-plugin",
+    createWpPluginRouter({
+      wpPluginService,
+      connectionRepository: wordpressConnectionRepository,
+      customersRepository,
+      encryptionKey: integrationEncryptionKey,
+    }),
   );
 
   app.use(notFoundHandler);

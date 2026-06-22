@@ -53,6 +53,10 @@ import { createMemoryWalletRepository } from "../modules/wallet/wallet.repositor
 import { WalletService } from "../modules/wallet/wallet.service";
 import { createWalletRouter } from "../modules/wallet/wallet.controller";
 
+import { hashPluginApiKey } from "../common/crypto";
+import { WpPluginService } from "../modules/wp-plugin/wp-plugin.service";
+import { createWpPluginRouter } from "../modules/wp-plugin/wp-plugin.controller";
+
 import { UserRow } from "../modules/users/users.types";
 import { RoleRow } from "../modules/roles/roles.types";
 import { CustomerRow } from "../modules/customers/customers.types";
@@ -70,6 +74,8 @@ export function createFakeWooCommerceApiClient(overrides?: Partial<WooCommerceAp
 }
 
 export const TEST_INTEGRATION_ENCRYPTION_KEY = "test-integration-encryption-key-32chars";
+export const TEST_PLUGIN_API_KEY = "test-plugin-api-key";
+export const TEST_PLUGIN_SHARED_SECRET = "test-plugin-shared-secret";
 
 export const TEST_JWT_CONFIG = {
   accessSecret: "test-access-secret-0123456789",
@@ -97,6 +103,7 @@ export interface TestAppHarness {
   wordpressWebhookEventRepository: ReturnType<typeof createMemoryWordPressWebhookEventRepository>;
   walletRepository: ReturnType<typeof createMemoryWalletRepository>;
   walletService: WalletService;
+  wpPluginService: WpPluginService;
 }
 
 export function buildTestApp(options?: {
@@ -129,15 +136,19 @@ export function buildTestApp(options?: {
   const rolesService = new RolesService({ rolesRepository, usersRepository, auditService });
   const businessSettingsService = new BusinessSettingsService({ repository: businessSettingsRepository, auditService });
 
-  const wordpressConnectionRepository = createMemoryWordPressConnectionRepository(
-    options?.wooCommerceClient
+  const wordpressConnectionRepository = createMemoryWordPressConnectionRepository({
+    ...(options?.wooCommerceClient
       ? {
           site_url: "https://example.test",
           consumer_key_encrypted: encryptSecret("test-key", TEST_INTEGRATION_ENCRYPTION_KEY),
           consumer_secret_encrypted: encryptSecret("test-secret", TEST_INTEGRATION_ENCRYPTION_KEY),
         }
-      : undefined,
-  );
+      : {}),
+    // Seeded unconditionally so wp-plugin tests can authenticate without
+    // every other test having to opt in.
+    plugin_api_key_hash: hashPluginApiKey(TEST_PLUGIN_API_KEY),
+    shared_secret_encrypted: encryptSecret(TEST_PLUGIN_SHARED_SECRET, TEST_INTEGRATION_ENCRYPTION_KEY),
+  });
   const wordpressSyncJobRepository = createMemoryWordPressSyncJobRepository();
   const wordpressSyncLogRepository = createMemoryWordPressSyncLogRepository();
   const wordpressWebhookEventRepository = createMemoryWordPressWebhookEventRepository();
@@ -233,6 +244,17 @@ export function buildTestApp(options?: {
     createWalletRouter({ walletService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
   );
 
+  const wpPluginService = new WpPluginService({ customersRepository, walletService });
+  app.use(
+    "/api/wp-plugin",
+    createWpPluginRouter({
+      wpPluginService,
+      connectionRepository: wordpressConnectionRepository,
+      customersRepository,
+      encryptionKey: TEST_INTEGRATION_ENCRYPTION_KEY,
+    }),
+  );
+
   app.use(notFoundHandler);
   app.use(createErrorFilter(createLogger("test", "error")));
 
@@ -255,5 +277,6 @@ export function buildTestApp(options?: {
     wordpressWebhookEventRepository,
     walletRepository,
     walletService,
+    wpPluginService,
   };
 }

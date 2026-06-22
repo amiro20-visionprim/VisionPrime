@@ -1,0 +1,30 @@
+.vp-component {
+	position: relative;
+	padding: 1em;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	margin-bottom: 1em;
+}
+
+.vp-component.vp-is-loading {
+	opacity: 0.6;
+	pointer-events: none;
+}
+
+.vp-component .vp-loading {
+	color: #666;
+	font-style: italic;
+}
+
+.vp-component .vp-error {
+	color: #b32d2e;
+}
+
+.vp-component .vp-refresh {
+	margin-top: 0.5em;
+}
+
+.vp-login-required {
+	color: #666;
+	font-style: italic;
+}
