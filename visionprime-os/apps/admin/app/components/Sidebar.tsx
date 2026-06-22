@@ -2,13 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Can } from "@visionprime/ui";
+import { useAuth } from "../lib/auth-client";
 
-/**
- * Placeholder sidebar. Real per-module permission gating is added once
- * Admin OS auth exists — every module route is listed here so Phase 02
- * placeholder pages are reachable.
- */
-const NAV_ITEMS = [
+interface NavItem {
+  label: string;
+  href: string;
+  /** Permission key gating visibility; omitted = always visible. */
+  permission?: string;
+}
+
+const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Customers", href: "/customers" },
   { label: "Orders", href: "/orders" },
@@ -23,14 +27,20 @@ const NAV_ITEMS = [
   { label: "Reports", href: "/reports" },
   { label: "Intelligence", href: "/intelligence" },
   { label: "WordPress Sync", href: "/wordpress-sync" },
-  { label: "Users", href: "/users" },
-  { label: "Audit Logs", href: "/audit-logs" },
-  { label: "Settings", href: "/settings" },
+  { label: "Users", href: "/users", permission: "user:view" },
+  { label: "Roles", href: "/roles", permission: "role:view" },
+  { label: "Permissions", href: "/permissions", permission: "permission:view" },
+  { label: "Audit Logs", href: "/audit-logs", permission: "audit:view" },
+  { label: "Activity Logs", href: "/activity-logs", permission: "audit:view" },
+  { label: "Security Events", href: "/security-events", permission: "security_event:view" },
+  { label: "Settings", href: "/settings", permission: "settings:view" },
   { label: "Design System", href: "/design-system" },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { permissions, isSuperAdmin } = useAuth();
+  const userPermissions = isSuperAdmin ? undefined : permissions;
 
   return (
     <nav style={{ width: 220, borderRight: "1px solid #e5e7eb", padding: "1rem", minHeight: "100vh" }}>
@@ -38,23 +48,33 @@ export function Sidebar() {
       <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.25rem" }}>
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href;
+          const link = (
+            <Link
+              href={item.href}
+              style={{
+                display: "block",
+                padding: "0.4rem 0.5rem",
+                borderRadius: 6,
+                color: isActive ? "#111827" : "#374151",
+                background: isActive ? "#f3f4f6" : "transparent",
+                fontWeight: isActive ? 600 : 400,
+                textDecoration: "none",
+                fontSize: "0.875rem",
+              }}
+            >
+              {item.label}
+            </Link>
+          );
+
+          if (!item.permission) {
+            return <li key={item.href}>{link}</li>;
+          }
+
           return (
             <li key={item.href}>
-              <Link
-                href={item.href}
-                style={{
-                  display: "block",
-                  padding: "0.4rem 0.5rem",
-                  borderRadius: 6,
-                  color: isActive ? "#111827" : "#374151",
-                  background: isActive ? "#f3f4f6" : "transparent",
-                  fontWeight: isActive ? 600 : 400,
-                  textDecoration: "none",
-                  fontSize: "0.875rem",
-                }}
-              >
-                {item.label}
-              </Link>
+              <Can permission={item.permission} userPermissions={userPermissions}>
+                {link}
+              </Can>
             </li>
           );
         })}

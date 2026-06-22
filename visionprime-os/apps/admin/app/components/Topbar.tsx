@@ -1,8 +1,18 @@
-/**
- * Placeholder topbar. Real auth-driven user menu is added once Admin
- * OS auth is implemented (not in Phase 01).
- */
+"use client";
+
+import { useRouter } from "next/navigation";
+import { Button } from "@visionprime/ui";
+import { useAuth } from "../lib/auth-client";
+
 export function Topbar() {
+  const router = useRouter();
+  const { user, logout } = useAuth();
+
+  async function handleLogout() {
+    await logout();
+    router.push("/login");
+  }
+
   return (
     <header
       style={{
@@ -14,7 +24,16 @@ export function Topbar() {
       }}
     >
       <span style={{ color: "#6b7280" }}>Admin OS</span>
-      <span style={{ color: "#6b7280" }}>Signed in as: (placeholder)</span>
+      {user ? (
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <span style={{ color: "#374151", fontSize: "0.875rem" }}>
+            {user.full_name} {user.is_super_admin ? "(Super Admin)" : ""}
+          </span>
+          <Button variant="secondary" size="sm" onClick={handleLogout}>
+            Sign out
+          </Button>
+        </div>
+      ) : null}
     </header>
   );
 }

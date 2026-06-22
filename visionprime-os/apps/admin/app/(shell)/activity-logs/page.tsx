@@ -4,12 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import { DataTable, DataTableColumn, PageHeader } from "@visionprime/ui";
 import { apiClient } from "../../lib/api-client";
 import { friendlyErrorMessage } from "../../lib/error-message";
-import { AuditLogRow, PaginationMeta } from "../../lib/types";
+import { ActivityLogRow, PaginationMeta } from "../../lib/types";
 
 const PAGE_SIZE = 20;
 
-export default function AuditLogsPage() {
-  const [rows, setRows] = useState<AuditLogRow[]>([]);
+export default function ActivityLogsPage() {
+  const [rows, setRows] = useState<ActivityLogRow[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>({ page: 1, pageSize: PAGE_SIZE, totalItems: 0, totalPages: 1 });
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -19,8 +19,8 @@ export default function AuditLogsPage() {
     setIsLoading(true);
     setError(undefined);
     try {
-      const result = await apiClient.getWithMeta<AuditLogRow[]>(
-        `/api/admin/audit-logs?page=${targetPage}&pageSize=${PAGE_SIZE}`,
+      const result = await apiClient.getWithMeta<ActivityLogRow[]>(
+        `/api/admin/activity-logs?page=${targetPage}&pageSize=${PAGE_SIZE}`,
       );
       setRows(result.data);
       setMeta(result.meta as unknown as PaginationMeta);
@@ -35,25 +35,28 @@ export default function AuditLogsPage() {
     load(page);
   }, [page, load]);
 
-  const columns: DataTableColumn<AuditLogRow>[] = [
+  const columns: DataTableColumn<ActivityLogRow>[] = [
     { key: "created_at", header: "Time", render: (row) => new Date(row.created_at).toLocaleString() },
     { key: "actor_id", header: "Actor", render: (row) => row.actor_id ?? "System" },
     { key: "action", header: "Action" },
-    { key: "target_type", header: "Target Type" },
-    { key: "target_id", header: "Target ID", render: (row) => row.target_id ?? "—" },
+    {
+      key: "metadata",
+      header: "Metadata",
+      render: (row) => (row.metadata ? JSON.stringify(row.metadata) : "—"),
+    },
   ];
 
   return (
     <div>
-      <PageHeader title="Audit Logs" description="System audit trail of administrative changes." />
-      <DataTable<AuditLogRow>
+      <PageHeader title="Activity Logs" description="General activity trail across the system." />
+      <DataTable<ActivityLogRow>
         columns={columns}
         rows={rows}
         isLoading={isLoading}
         error={error}
         onRetry={() => load(page)}
-        emptyTitle="No audit log entries yet."
-        emptyDescription="Audit log entries will appear here as actions are performed."
+        emptyTitle="No activity log entries yet."
+        emptyDescription="Activity log entries will appear here as actions are performed."
         pagination={{
           page: meta.page,
           pageSize: meta.pageSize,

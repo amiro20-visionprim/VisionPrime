@@ -5,6 +5,13 @@
  */
 export interface ApiClientConfig {
   baseUrl: string;
+  /**
+   * Optional callback returning extra headers (e.g. `Authorization:
+   * Bearer <token>`) to merge into every request. Re-read on each call
+   * so a refreshed token is picked up without re-constructing the
+   * client.
+   */
+  getAuthHeader?: () => Record<string, string>;
 }
 
 export interface ApiSuccessShape<T> {
@@ -43,6 +50,15 @@ export class ApiClient {
     return this.request<T>(path, { method: "GET" });
   }
 
+  /**
+   * Like `get`, but resolves with the full `{data, meta}` envelope
+   * instead of just `data` — used by paginated list views that need
+   * `meta.page` / `meta.totalItems` / etc. alongside the rows.
+   */
+  async getWithMeta<T>(path: string): Promise<ApiSuccessShape<T>> {
+    return this.requestEnvelope<T>(path, { method: "GET" });
+  }
+
   async post<T>(path: string, body?: unknown): Promise<T> {
     return this.request<T>(path, {
       method: "POST",
@@ -51,14 +67,38 @@ export class ApiClient {
     });
   }
 
+  async patch<T>(path: string, body?: unknown): Promise<T> {
+    return this.request<T>(path, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  }
+
+  async delete<T>(path: string): Promise<T> {
+    return this.request<T>(path, { method: "DELETE" });
+  }
+
   private async request<T>(path: string, init: RequestInit): Promise<T> {
-    const response = await fetch(`${this.config.baseUrl}${path}`, init);
+    const payload = await this.requestEnvelope<T>(path, init);
+    return payload.data;
+  }
+
+  private async requestEnvelope<T>(path: string, init: RequestInit): Promise<ApiSuccessShape<T>> {
+    const authHeaders = this.config.getAuthHeader ? this.config.getAuthHeader() : {};
+    const response = await fetch(`${this.config.baseUrl}${path}`, {
+      ...init,
+      headers: {
+        ...(init.headers ?? {}),
+        ...authHeaders,
+      },
+    });
     const payload = (await response.json()) as ApiResult<T>;
 
     if (!payload.success) {
       throw new ApiClientError(payload.error);
     }
 
-    return payload.data;
+    return payload;
   }
 }

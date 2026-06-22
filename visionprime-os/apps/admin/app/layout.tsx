@@ -1,5 +1,6 @@
 import React from "react";
 import { ToastProvider } from "@visionprime/ui";
+import { AuthProvider } from "./lib/auth-client";
 
 export const metadata = {
   title: "VisionPrime OS — Admin",
@@ -10,7 +11,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body style={{ margin: 0, fontFamily: "system-ui, sans-serif" }}>
-        <ToastProvider>{children}</ToastProvider>
+        <ToastProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </ToastProvider>
       </body>
     </html>
   );
