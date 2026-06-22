@@ -1,9 +1,24 @@
 import request from "supertest";
 import { createLogger } from "@visionprime/logger";
+import { Db } from "@visionprime/database";
 import { createApp } from "./app";
 
 describe("API foundation endpoints", () => {
-  const app = createApp(createLogger("test", "error"));
+  const fakeDb: Db = {
+    async query() {
+      return { rows: [], rowCount: 0 };
+    },
+  };
+
+  const app = createApp(createLogger("test", "error"), {
+    db: fakeDb,
+    jwt: {
+      accessSecret: "test-access-secret-0123456789",
+      refreshSecret: "test-refresh-secret-0123456789",
+      accessTtlMinutes: 15,
+      refreshTtlDays: 7,
+    },
+  });
 
   it("GET /api/health returns a standard success envelope", async () => {
     const res = await request(app).get("/api/health");

@@ -7,9 +7,16 @@ import { randomUUID } from "crypto";
  * once real auth exists, starting Phase 02 — call sites in later
  * phases should read from `req.context` rather than re-deriving it.
  */
+export interface AuthContext {
+  userId: string;
+  isSuperAdmin: boolean;
+  permissions: string[];
+}
+
 export interface RequestContext {
   requestId: string;
   userId?: string;
+  auth?: AuthContext;
 }
 
 declare global {
