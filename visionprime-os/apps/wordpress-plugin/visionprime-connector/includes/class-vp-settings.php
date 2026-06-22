@@ -144,6 +144,14 @@ class VP_Settings {
 		return $this->is_feature_enabled( 'enable_tier' );
 	}
 
+	public function is_checkout_wallet_enabled(): bool {
+		return $this->is_feature_enabled( 'enable_checkout_wallet' );
+	}
+
+	public function is_checkout_rewards_enabled(): bool {
+		return $this->is_feature_enabled( 'enable_checkout_rewards' );
+	}
+
 	public function is_my_account_tabs_enabled(): bool {
 		return $this->is_feature_enabled( 'enable_my_account_tabs' );
 	}
@@ -200,7 +208,7 @@ class VP_Settings {
 					$this->render_checkbox_row( 'enable_points', __( 'Enable Points', 'visionprime-connector' ), $values );
 					$this->render_checkbox_row( 'enable_rewards', __( 'Enable Rewards', 'visionprime-connector' ), $values );
 					$this->render_checkbox_row( 'enable_tier', __( 'Enable Tier', 'visionprime-connector' ), $values );
-					$this->render_checkbox_row( 'enable_checkout_wallet', __( 'Enable Checkout Wallet (not yet implemented)', 'visionprime-connector' ), $values, true );
+					$this->render_checkbox_row( 'enable_checkout_wallet', __( 'Enable Checkout Wallet', 'visionprime-connector' ), $values );
 					$this->render_checkbox_row( 'enable_checkout_rewards', __( 'Enable Checkout Rewards (not yet implemented)', 'visionprime-connector' ), $values, true );
 					$this->render_checkbox_row( 'enable_my_account_tabs', __( 'Enable My Account Tabs', 'visionprime-connector' ), $values );
 					$this->render_checkbox_row( 'enable_order_webhooks', __( 'Enable Order Webhooks', 'visionprime-connector' ), $values );

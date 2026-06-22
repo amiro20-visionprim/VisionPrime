@@ -123,6 +123,94 @@
 			} );
 	}
 
+	/* -------------------------------------------------------------- */
+	/* Checkout wallet widget (Phase 09)                               */
+	/*                                                                  */
+	/* Apply/remove are pure AJAX — applying triggers WooCommerce's own */
+	/* `update_checkout` event so totals refresh via WC's AJAX         */
+	/* mechanism (woocommerce_update_order_review), never a page reload. */
+	/* -------------------------------------------------------------- */
+
+	function renderWalletWidget( $widget, data ) {
+		var reservation = data && data.reservation;
+		var html        = '';
+
+		if ( reservation && 'active' === reservation.status ) {
+			html += '<p class="vp-wallet-applied">' + vpEscapeHtml( visionprimePublic.wallet.appliedMessage ) + '</p>';
+			html += '<button type="button" class="button vp-wallet-remove">' + vpEscapeHtml( visionprimePublic.wallet.removeLabel ) + '</button>';
+		} else {
+			html += '<label for="vp-wallet-amount">' + vpEscapeHtml( ( data && data.label ) || '' ) + '</label>';
+			html += '<input type="number" min="0" step="0.01" id="vp-wallet-amount" class="vp-wallet-amount" />';
+			html += '<button type="button" class="button vp-wallet-apply">' + vpEscapeHtml( visionprimePublic.wallet.applyLabel ) + '</button>';
+		}
+
+		html += '<p class="vp-wallet-error" style="display:none;"></p>';
+		$widget.html( html );
+	}
+
+	function showWalletBalance( $widget ) {
+		var nonce = $widget.data( 'vp-nonce' );
+
+		$.post( visionprimePublic.ajaxUrl, { action: 'vp_get_wallet', nonce: nonce } ).done( function ( response ) {
+			var balanceCents = response && response.success && response.data ? response.data.availableBalanceCents : 0;
+			renderWalletWidget( $widget, { label: 'Available: ' + ( ( balanceCents || 0 ) / 100 ).toFixed( 2 ) } );
+		} );
+	}
+
+	function showWalletError( $widget, message ) {
+		$widget.find( '.vp-wallet-error' ).text( message ).show();
+	}
+
+	function applyWalletCredit( $widget ) {
+		var nonce  = $widget.data( 'vp-nonce' );
+		var amount = parseFloat( $widget.find( '.vp-wallet-amount' ).val() );
+
+		if ( ! amount || amount <= 0 ) {
+			showWalletError( $widget, visionprimePublic.wallet.enterAmount );
+			return;
+		}
+
+		$widget.find( '.vp-wallet-apply' ).prop( 'disabled', true );
+
+		$.post( visionprimePublic.ajaxUrl, { action: 'vp_apply_wallet_credit', nonce: nonce, amount: amount } )
+			.done( function ( response ) {
+				if ( response && response.success ) {
+					renderWalletWidget( $widget, response.data );
+					// No full page reload: ask WooCommerce's own checkout
+					// AJAX to recompute totals (woocommerce_update_order_review).
+					$( document.body ).trigger( 'update_checkout' );
+				} else {
+					showWalletError( $widget, ( response && response.data && response.data.message ) || visionprimePublic.genericError );
+					$widget.find( '.vp-wallet-apply' ).prop( 'disabled', false );
+				}
+			} )
+			.fail( function () {
+				showWalletError( $widget, visionprimePublic.genericError );
+				$widget.find( '.vp-wallet-apply' ).prop( 'disabled', false );
+			} );
+	}
+
+	function removeWalletCredit( $widget ) {
+		var nonce = $widget.data( 'vp-nonce' );
+
+		$widget.find( '.vp-wallet-remove' ).prop( 'disabled', true );
+
+		$.post( visionprimePublic.ajaxUrl, { action: 'vp_remove_wallet_credit', nonce: nonce } )
+			.done( function ( response ) {
+				if ( response && response.success ) {
+					showWalletBalance( $widget );
+					$( document.body ).trigger( 'update_checkout' );
+				} else {
+					showWalletError( $widget, ( response && response.data && response.data.message ) || visionprimePublic.genericError );
+					$widget.find( '.vp-wallet-remove' ).prop( 'disabled', false );
+				}
+			} )
+			.fail( function () {
+				showWalletError( $widget, visionprimePublic.genericError );
+				$widget.find( '.vp-wallet-remove' ).prop( 'disabled', false );
+			} );
+	}
+
 	$( function () {
 		$( '.vp-component' ).each( function () {
 			loadComponent( $( this ) );
@@ -130,6 +218,18 @@
 
 		$( document ).on( 'click', '.vp-refresh', function () {
 			refreshComponent( $( this ).closest( '.vp-component' ) );
+		} );
+
+		$( '.vp-checkout-wallet' ).each( function () {
+			showWalletBalance( $( this ) );
+		} );
+
+		$( document ).on( 'click', '.vp-wallet-apply', function () {
+			applyWalletCredit( $( this ).closest( '.vp-checkout-wallet' ) );
+		} );
+
+		$( document ).on( 'click', '.vp-wallet-remove', function () {
+			removeWalletCredit( $( this ).closest( '.vp-checkout-wallet' ) );
 		} );
 	} );
 } )( jQuery );

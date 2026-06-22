@@ -2,8 +2,8 @@
 /**
  * Plugin Name:       VisionPrime Connector
  * Plugin URI:        https://example.com/visionprime-os
- * Description:       Connects this WooCommerce store to VisionPrime OS. Fully AJAX-based connector and customer account display layer (wallet/points/rewards/tier base). No checkout integration yet.
- * Version:           0.2.0
+ * Description:       Connects this WooCommerce store to VisionPrime OS. Fully AJAX-based connector, customer account display layer (wallet/points/rewards/tier), and checkout wallet reservation integration. Reward checkout is base structure only.
+ * Version:           0.3.0
  * Requires at least: 6.0
  * Requires PHP:      8.0
  * Author:            VisionPrime
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Disallow direct access.
 }
 
-define( 'VISIONPRIME_CONNECTOR_VERSION', '0.2.0' );
+define( 'VISIONPRIME_CONNECTOR_VERSION', '0.3.0' );
 define( 'VISIONPRIME_CONNECTOR_PATH', plugin_dir_path( __FILE__ ) );
 define( 'VISIONPRIME_CONNECTOR_URL', plugin_dir_url( __FILE__ ) );
 
@@ -52,7 +52,7 @@ function visionprime_connector_init() {
 	$ajax       = new VP_Ajax( $settings, $auth, $api_client, $logger, $webhooks );
 	$shortcodes = new VP_Shortcodes( $settings, $auth );
 	$my_account = new VP_My_Account( $settings, $auth );
-	$checkout   = new VP_Checkout( $settings );
+	$checkout   = new VP_Checkout( $settings, $auth, $api_client, $logger );
 	$wc_hooks   = new VP_WooCommerce_Hooks( $settings, $logger );
 
 	$loader = new VP_Loader( $settings, $auth, $ajax, $shortcodes, $my_account, $checkout, $webhooks, $wc_hooks );

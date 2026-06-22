@@ -21,14 +21,15 @@ import {
 import { apiClient } from "../../../lib/api-client";
 import { useAuth } from "../../../lib/auth-client";
 import { friendlyErrorMessage } from "../../../lib/error-message";
-import { Customer360, Customer360Order, Wallet } from "../../../lib/types";
+import { Customer360, Customer360Order, Wallet, WalletReservation } from "../../../lib/types";
 
-type TabKey = "overview" | "metrics" | "orders" | "notes" | "tags" | "identities" | "events";
+type TabKey = "overview" | "metrics" | "orders" | "notes" | "tags" | "identities" | "events" | "reservations";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "overview", label: "Overview" },
   { key: "metrics", label: "Metrics" },
   { key: "orders", label: "Orders" },
+  { key: "reservations", label: "Reservations" },
   { key: "notes", label: "Notes" },
   { key: "tags", label: "Tags" },
   { key: "identities", label: "Identities" },
@@ -53,6 +54,9 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
 
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [isLoadingWallet, setIsLoadingWallet] = useState(true);
+
+  const [reservations, setReservations] = useState<WalletReservation[]>([]);
+  const [isLoadingReservations, setIsLoadingReservations] = useState(true);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -80,6 +84,18 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
         .finally(() => setIsLoadingWallet(false));
     } else {
       setIsLoadingWallet(false);
+    }
+  }, [params.id, userPermissions]);
+
+  useEffect(() => {
+    if (!userPermissions || userPermissions.includes("wallet_reservation:view")) {
+      apiClient
+        .getWithMeta<WalletReservation[]>(`/api/admin/wallet-reservations/customer/${params.id}`)
+        .then((result) => setReservations(result.data))
+        .catch(() => setReservations([]))
+        .finally(() => setIsLoadingReservations(false));
+    } else {
+      setIsLoadingReservations(false);
     }
   }, [params.id, userPermissions]);
 
@@ -204,6 +220,26 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
             emptyTitle="No orders yet."
             emptyDescription="Orders will appear here once synced from WooCommerce."
           />
+        ) : null}
+
+        {activeTab === "reservations" ? (
+          <div style={{ maxWidth: 720 }}>
+            {isLoadingReservations ? <p>Loading…</p> : null}
+            {!isLoadingReservations && reservations.length === 0 ? <p>No wallet reservations yet.</p> : null}
+            <ul style={{ listStyle: "none", padding: 0 }}>
+              {reservations.map((reservation) => (
+                <li key={reservation.id} style={{ padding: "0.5rem 0", borderBottom: "1px solid #e5e7eb" }}>
+                  <p>
+                    {`$${(reservation.amountCents / 100).toFixed(2)} ${reservation.currency}`} — <StatusBadge status={reservation.status === "active" || reservation.status === "confirmed" ? "active" : "failed"} /> ({reservation.status})
+                  </p>
+                  <p style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+                    Cart {reservation.cartKey} · Created {new Date(reservation.createdAt).toLocaleString()}
+                    {reservation.woocommerceOrderId ? ` · Order ${reservation.woocommerceOrderId}` : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
         ) : null}
 
         {activeTab === "notes" ? (

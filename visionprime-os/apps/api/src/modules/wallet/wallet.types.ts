@@ -2,7 +2,14 @@ export const DEFAULT_WALLET_CURRENCY = "USD";
 
 export type LedgerDirection = "credit" | "debit";
 
-export const LEDGER_TYPES = ["manual_credit", "manual_debit", "cashback", "reversal", "expiration"] as const;
+export const LEDGER_TYPES = [
+  "manual_credit",
+  "manual_debit",
+  "cashback",
+  "reversal",
+  "expiration",
+  "checkout_redemption",
+] as const;
 export type LedgerType = (typeof LEDGER_TYPES)[number];
 
 export interface WalletRow {

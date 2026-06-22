@@ -57,6 +57,13 @@ import { hashPluginApiKey } from "../common/crypto";
 import { WpPluginService } from "../modules/wp-plugin/wp-plugin.service";
 import { createWpPluginRouter } from "../modules/wp-plugin/wp-plugin.controller";
 
+import {
+  createMemoryWalletReservationRepository,
+  createMemoryRewardReservationRepository,
+} from "../modules/checkout/checkout.repository.memory";
+import { CheckoutService } from "../modules/checkout/checkout.service";
+import { createRewardReservationsRouter, createWalletReservationsRouter } from "../modules/checkout/checkout.controller";
+
 import { UserRow } from "../modules/users/users.types";
 import { RoleRow } from "../modules/roles/roles.types";
 import { CustomerRow } from "../modules/customers/customers.types";
@@ -104,6 +111,9 @@ export interface TestAppHarness {
   walletRepository: ReturnType<typeof createMemoryWalletRepository>;
   walletService: WalletService;
   wpPluginService: WpPluginService;
+  walletReservationRepository: ReturnType<typeof createMemoryWalletReservationRepository>;
+  rewardReservationRepository: ReturnType<typeof createMemoryRewardReservationRepository>;
+  checkoutService: CheckoutService;
 }
 
 export function buildTestApp(options?: {
@@ -167,6 +177,14 @@ export function buildTestApp(options?: {
   const ordersRepository = createMemoryOrdersRepository();
   const walletRepository = createMemoryWalletRepository();
   const walletService = new WalletService({ walletRepository, auditService });
+  const walletReservationRepository = createMemoryWalletReservationRepository();
+  const rewardReservationRepository = createMemoryRewardReservationRepository();
+  const checkoutService = new CheckoutService({
+    walletRepository,
+    walletReservationRepository,
+    rewardReservationRepository,
+    auditService,
+  });
 
   const syncService = new WordPressSyncService({
     connectionRepository: wordpressConnectionRepository,
@@ -249,10 +267,20 @@ export function buildTestApp(options?: {
     "/api/wp-plugin",
     createWpPluginRouter({
       wpPluginService,
+      checkoutService,
       connectionRepository: wordpressConnectionRepository,
       customersRepository,
       encryptionKey: TEST_INTEGRATION_ENCRYPTION_KEY,
     }),
+  );
+
+  app.use(
+    "/api/admin/wallet-reservations",
+    createWalletReservationsRouter({ checkoutService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
+  );
+  app.use(
+    "/api/admin/reward-reservations",
+    createRewardReservationsRouter({ checkoutService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
   );
 
   app.use(notFoundHandler);
@@ -278,5 +306,8 @@ export function buildTestApp(options?: {
     walletRepository,
     walletService,
     wpPluginService,
+    walletReservationRepository,
+    rewardReservationRepository,
+    checkoutService,
   };
 }

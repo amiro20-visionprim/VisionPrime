@@ -101,6 +101,13 @@ class VP_Loader {
 			array(
 				'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
 				'genericError' => __( 'Something went wrong. Please try again.', 'visionprime-connector' ),
+				'wallet'       => array(
+					'enterAmount'        => __( 'Enter an amount to apply.', 'visionprime-connector' ),
+					'applyLabel'         => __( 'Apply', 'visionprime-connector' ),
+					'removeLabel'        => __( 'Remove', 'visionprime-connector' ),
+					'appliedMessage'     => __( 'Wallet credit applied — it will be charged when your order is placed.', 'visionprime-connector' ),
+					'removedMessage'     => __( 'Wallet credit removed.', 'visionprime-connector' ),
+				),
 			)
 		);
 	}

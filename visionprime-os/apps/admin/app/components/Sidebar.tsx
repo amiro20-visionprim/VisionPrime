@@ -18,6 +18,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Products", href: "/products", permission: "product:view" },
   { label: "Orders", href: "/orders", permission: "order:view" },
   { label: "Wallet", href: "/wallet", permission: "wallet:view" },
+  { label: "Wallet Reservations", href: "/wallet-reservations", permission: "wallet_reservation:view" },
   { label: "Loyalty", href: "/loyalty" },
   { label: "Rewards", href: "/rewards" },
   { label: "Segments", href: "/segments" },

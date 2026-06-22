@@ -63,6 +63,13 @@ import { createWalletRouter } from "./modules/wallet/wallet.controller";
 import { WpPluginService } from "./modules/wp-plugin/wp-plugin.service";
 import { createWpPluginRouter } from "./modules/wp-plugin/wp-plugin.controller";
 
+import {
+  createDbRewardReservationRepository,
+  createDbWalletReservationRepository,
+} from "./modules/checkout/checkout.repository.db";
+import { CheckoutService } from "./modules/checkout/checkout.service";
+import { createRewardReservationsRouter, createWalletReservationsRouter } from "./modules/checkout/checkout.controller";
+
 export interface CreateAppOptions {
   db: Db;
   jwt: AuthServiceConfig;
@@ -106,6 +113,16 @@ export function createApp(logger: Logger, options: CreateAppOptions): Express {
   // --- Phase 07: wallet ledger ---
   const walletRepository = createDbWalletRepository(db);
   const walletService = new WalletService({ walletRepository, auditService });
+
+  // --- Phase 09: checkout wallet/reward reservations ---
+  const walletReservationRepository = createDbWalletReservationRepository(db);
+  const rewardReservationRepository = createDbRewardReservationRepository(db);
+  const checkoutService = new CheckoutService({
+    walletRepository,
+    walletReservationRepository,
+    rewardReservationRepository,
+    auditService,
+  });
 
   const syncService = new WordPressSyncService({
     connectionRepository: wordpressConnectionRepository,
@@ -221,10 +238,21 @@ export function createApp(logger: Logger, options: CreateAppOptions): Express {
     "/api/wp-plugin",
     createWpPluginRouter({
       wpPluginService,
+      checkoutService,
       connectionRepository: wordpressConnectionRepository,
       customersRepository,
       encryptionKey: integrationEncryptionKey,
     }),
+  );
+
+  // --- Phase 09: admin-side reservation visibility ---
+  app.use(
+    "/api/admin/wallet-reservations",
+    createWalletReservationsRouter({ checkoutService, accessSecret: jwt.accessSecret }),
+  );
+  app.use(
+    "/api/admin/reward-reservations",
+    createRewardReservationsRouter({ checkoutService, accessSecret: jwt.accessSecret }),
   );
 
   app.use(notFoundHandler);

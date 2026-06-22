@@ -1,13 +1,23 @@
 import { Router } from "express";
 import { asyncHandler } from "../../common/async-handler";
-import { sendSuccess } from "../../common/response";
+import { sendError, sendSuccess } from "../../common/response";
+import { validate } from "@visionprime/validation";
 import { CustomersRepository } from "../customers/customers.repository";
 import { WordPressConnectionRepository } from "../wordpress/wordpress.repository";
+import { CheckoutService } from "../checkout/checkout.service";
 import { createPluginAuthMiddleware, PluginAuthedRequest } from "./wp-plugin.middleware";
 import { WpPluginService } from "./wp-plugin.service";
+import {
+  cartKeySchema,
+  rewardCartKeySchema,
+  rewardConfirmSchema,
+  walletAmountSchema,
+  walletConfirmSchema,
+} from "./wp-plugin.dto";
 
 export interface WpPluginControllerDeps {
   wpPluginService: WpPluginService;
+  checkoutService: CheckoutService;
   connectionRepository: WordPressConnectionRepository;
   customersRepository: CustomersRepository;
   encryptionKey: string;
@@ -74,6 +84,123 @@ export function createWpPluginRouter(deps: WpPluginControllerDeps): Router {
     asyncHandler(async (req: PluginAuthedRequest, res) => {
       const result = await deps.wpPluginService.getTier(req.vpCustomerId!);
       sendSuccess(res, result);
+    }),
+  );
+
+  // ---------------------------------------------------------------- //
+  // Checkout wallet reservation — see checkout.service.ts. The amount
+  // submitted here is never trusted as the final word; validateWallet/
+  // reserveWallet always recompute available balance server-side from
+  // the ledger + other active reservations.
+  // ---------------------------------------------------------------- //
+
+  router.post(
+    "/checkout/wallet/validate",
+    asyncHandler(async (req: PluginAuthedRequest, res) => {
+      const result = validate(walletAmountSchema, req.body);
+      if (!result.success) {
+        sendError(res, "VALIDATION_FAILED", "One or more fields are invalid.", 400, result.fieldErrors);
+        return;
+      }
+      const outcome = await deps.checkoutService.validateWallet(req.vpCustomerId!, result.data!.cartKey, result.data!.amount);
+      sendSuccess(res, outcome);
+    }),
+  );
+
+  router.post(
+    "/checkout/wallet/reserve",
+    asyncHandler(async (req: PluginAuthedRequest, res) => {
+      const result = validate(walletAmountSchema, req.body);
+      if (!result.success) {
+        sendError(res, "VALIDATION_FAILED", "One or more fields are invalid.", 400, result.fieldErrors);
+        return;
+      }
+      const reservation = await deps.checkoutService.reserveWallet(req.vpCustomerId!, result.data!.cartKey, result.data!.amount);
+      sendSuccess(res, reservation, {}, 201);
+    }),
+  );
+
+  router.post(
+    "/checkout/wallet/release",
+    asyncHandler(async (req: PluginAuthedRequest, res) => {
+      const result = validate(cartKeySchema, req.body);
+      if (!result.success) {
+        sendError(res, "VALIDATION_FAILED", "One or more fields are invalid.", 400, result.fieldErrors);
+        return;
+      }
+      const outcome = await deps.checkoutService.releaseWallet(result.data!.cartKey);
+      sendSuccess(res, outcome);
+    }),
+  );
+
+  router.post(
+    "/checkout/wallet/confirm",
+    asyncHandler(async (req: PluginAuthedRequest, res) => {
+      const result = validate(walletConfirmSchema, req.body);
+      if (!result.success) {
+        sendError(res, "VALIDATION_FAILED", "One or more fields are invalid.", 400, result.fieldErrors);
+        return;
+      }
+      const reservation = await deps.checkoutService.confirmWallet(result.data!.cartKey, result.data!.woocommerceOrderId);
+      sendSuccess(res, reservation);
+    }),
+  );
+
+  // ---------------------------------------------------------------- //
+  // Checkout reward reservation — base structure only. Every validate/
+  // reserve/confirm call returns "not available yet" until a real
+  // reward catalog/redemption module ships (see checkout.service.ts).
+  // ---------------------------------------------------------------- //
+
+  router.post(
+    "/checkout/reward/validate",
+    asyncHandler(async (req: PluginAuthedRequest, res) => {
+      const result = validate(rewardCartKeySchema, req.body);
+      if (!result.success) {
+        sendError(res, "VALIDATION_FAILED", "One or more fields are invalid.", 400, result.fieldErrors);
+        return;
+      }
+      const outcome = await deps.checkoutService.validateReward(req.vpCustomerId!, result.data!.cartKey, result.data!.rewardId);
+      sendSuccess(res, outcome);
+    }),
+  );
+
+  router.post(
+    "/checkout/reward/reserve",
+    asyncHandler(async (req: PluginAuthedRequest, res) => {
+      const result = validate(rewardCartKeySchema, req.body);
+      if (!result.success) {
+        sendError(res, "VALIDATION_FAILED", "One or more fields are invalid.", 400, result.fieldErrors);
+        return;
+      }
+      const reservation = await deps.checkoutService.reserveReward(req.vpCustomerId!, result.data!.cartKey, result.data!.rewardId);
+      sendSuccess(res, reservation, {}, 201);
+    }),
+  );
+
+  router.post(
+    "/checkout/reward/release",
+    asyncHandler(async (req: PluginAuthedRequest, res) => {
+      const result = validate(cartKeySchema, req.body);
+      if (!result.success) {
+        sendError(res, "VALIDATION_FAILED", "One or more fields are invalid.", 400, result.fieldErrors);
+        return;
+      }
+      const outcome = await deps.checkoutService.releaseReward(result.data!.cartKey);
+      sendSuccess(res, outcome);
+    }),
+  );
+
+  router.post(
+    "/checkout/reward/confirm",
+    asyncHandler(async (req: PluginAuthedRequest, res) => {
+      const result = validate(rewardConfirmSchema, req.body);
+      if (!result.success) {
+        sendError(res, "VALIDATION_FAILED", "One or more fields are invalid.", 400, result.fieldErrors);
+        return;
+      }
+      const reservation = await deps.checkoutService.confirmReward(result.data!.cartKey, result.data!.woocommerceOrderId);
+      sendSuccess(res, reservation);
     }),
   );
 

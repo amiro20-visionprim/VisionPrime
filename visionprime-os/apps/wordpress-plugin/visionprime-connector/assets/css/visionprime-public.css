@@ -28,3 +28,24 @@
 	color: #666;
 	font-style: italic;
 }
+
+.vp-checkout-wallet {
+	padding: 1em;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	margin-bottom: 1.5em;
+}
+
+.vp-checkout-wallet .vp-wallet-amount {
+	width: 8em;
+	margin-right: 0.5em;
+}
+
+.vp-checkout-wallet .vp-wallet-error {
+	color: #b32d2e;
+	margin-top: 0.5em;
+}
+
+.vp-checkout-wallet .vp-wallet-applied {
+	color: #2a7a2a;
+}

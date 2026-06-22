@@ -295,3 +295,14 @@ export interface WalletLiabilityReport {
   walletCount: number;
   currency: string;
 }
+
+export interface WalletReservation {
+  id: string;
+  cartKey: string;
+  amountCents: number;
+  currency: string;
+  status: "active" | "confirmed" | "released" | "expired";
+  expiresAt: string;
+  woocommerceOrderId: string | null;
+  createdAt: string;
+}

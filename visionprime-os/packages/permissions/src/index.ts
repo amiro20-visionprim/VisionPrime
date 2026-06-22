@@ -53,6 +53,10 @@ export const SYSTEM_PERMISSIONS = [
   "wallet:manual_debit",
   "wallet:reverse",
   "wallet:report:view",
+
+  // --- Phase 09: checkout wallet/reward reservations ---
+  "wallet_reservation:view",
+  "reward_reservation:view",
 ] as const;
 
 export type Permission = (typeof SYSTEM_PERMISSIONS)[number];

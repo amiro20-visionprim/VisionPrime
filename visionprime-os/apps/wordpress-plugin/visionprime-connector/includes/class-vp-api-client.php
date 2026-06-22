@@ -157,8 +157,12 @@ class VP_Api_Client {
 				'ok'      => false,
 				'status'  => $status,
 				'body'    => $parsed,
-				// Never surface the raw backend error to the customer.
-				'message' => $this->friendly_message_for_status( $status ),
+				'code'    => $parsed['error']['code'] ?? null,
+				// Validation/business-rule errors (400/404/409/422) already carry a
+				// customer-safe message generated server-side (e.g. "That amount
+				// exceeds your available wallet balance."); only unexpected/5xx
+				// failures fall back to a generic masked message.
+				'message' => $this->friendly_message_for_status( $status, $parsed['error']['message'] ?? null ),
 			);
 		}
 
@@ -169,9 +173,15 @@ class VP_Api_Client {
 		);
 	}
 
-	private function friendly_message_for_status( int $status ): string {
+	private function friendly_message_for_status( int $status, ?string $business_message = null ): string {
 		if ( 401 === $status || 403 === $status ) {
 			return __( 'VisionPrime could not verify this request. Please contact support if this continues.', 'visionprime-connector' );
+		}
+		// 400/404/409/422 are business-rule outcomes (validation, insufficient
+		// balance, expired/duplicate reservation, etc.) whose server-generated
+		// message is already written for a customer audience.
+		if ( in_array( $status, array( 400, 404, 409, 422 ), true ) && $business_message ) {
+			return $business_message;
 		}
 		if ( 404 === $status ) {
 			return __( 'That information is not available right now.', 'visionprime-connector' );
