@@ -46,3 +46,6 @@ wp-content/cache/
 # Misc
 *.tmp
 *.bak
+
+# Agent tooling worktrees (not project content)
+.claude/
