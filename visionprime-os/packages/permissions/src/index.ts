@@ -57,6 +57,17 @@ export const SYSTEM_PERMISSIONS = [
   // --- Phase 09: checkout wallet/reward reservations ---
   "wallet_reservation:view",
   "reward_reservation:view",
+
+  // --- Phase 10: loyalty programs/tiers, points ledger, reward catalog ---
+  "loyalty:view",
+  "loyalty:manage",
+  "points:view",
+  "reward:view",
+  "reward:create",
+  "reward:update",
+  "reward:delete",
+  "reward_claim:view",
+  "reward_redemption:view",
 ] as const;
 
 export type Permission = (typeof SYSTEM_PERMISSIONS)[number];

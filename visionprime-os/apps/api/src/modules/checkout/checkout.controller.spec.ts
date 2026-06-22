@@ -259,7 +259,7 @@ describe("Checkout wallet reservations", () => {
     expect(list.status).toBe(403);
   });
 
-  it("reward checkout endpoints return a disabled base-structure response", async () => {
+  it("reward checkout validate without a claim id reports invalid rather than throwing", async () => {
     const harness = buildTestApp();
     const res = await request(harness.app)
       .post("/api/wp-plugin/checkout/reward/validate")
@@ -267,6 +267,6 @@ describe("Checkout wallet reservations", () => {
       .send({ cartKey: "cart-13" });
 
     expect(res.status).toBe(200);
-    expect(res.body.data.enabled).toBe(false);
+    expect(res.body.data.valid).toBe(false);
   });
 });

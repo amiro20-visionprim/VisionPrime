@@ -53,24 +53,24 @@ describe("WordPress plugin customer API", () => {
     expect(res.body.data.availableBalanceCents).toBe(0);
   });
 
-  it("loads the points tab via AJAX as a disabled placeholder", async () => {
+  it("loads the points tab via AJAX (zero balance for a new customer)", async () => {
     const harness = buildTestApp();
     const res = await request(harness.app)
       .get("/api/wp-plugin/customer/points")
       .set(pluginHeaders("GET", "/customer/points", { wpUserId: "wp-301" }));
 
     expect(res.status).toBe(200);
-    expect(res.body.data).toEqual({ enabled: false, balanceCents: 0 });
+    expect(res.body.data).toEqual({ enabled: true, balance: 0, lifetimePoints: 0 });
   });
 
-  it("loads the rewards tab via AJAX as a disabled placeholder", async () => {
+  it("loads the rewards tab via AJAX (empty for a new customer)", async () => {
     const harness = buildTestApp();
     const res = await request(harness.app)
       .get("/api/wp-plugin/customer/rewards")
       .set(pluginHeaders("GET", "/customer/rewards", { wpUserId: "wp-302" }));
 
     expect(res.status).toBe(200);
-    expect(res.body.data).toEqual({ enabled: false, rewards: [] });
+    expect(res.body.data).toEqual({ enabled: true, claimed: [], available: [] });
   });
 
   it("loads the dashboard aggregate via AJAX", async () => {

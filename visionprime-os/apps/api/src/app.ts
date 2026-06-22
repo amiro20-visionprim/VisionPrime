@@ -70,6 +70,22 @@ import {
 import { CheckoutService } from "./modules/checkout/checkout.service";
 import { createRewardReservationsRouter, createWalletReservationsRouter } from "./modules/checkout/checkout.controller";
 
+import { createDbLoyaltyRepository } from "./modules/loyalty/loyalty.repository.db";
+import { LoyaltyService } from "./modules/loyalty/loyalty.service";
+import { createLoyaltyRouter } from "./modules/loyalty/loyalty.controller";
+
+import { createDbPointsRepository } from "./modules/points/points.repository.db";
+import { PointsService } from "./modules/points/points.service";
+import { createPointsRouter } from "./modules/points/points.controller";
+
+import { createDbRewardsRepository } from "./modules/rewards/rewards.repository.db";
+import { RewardsService } from "./modules/rewards/rewards.service";
+import {
+  createRewardsRouter,
+  createRewardClaimsRouter,
+  createRewardRedemptionsRouter,
+} from "./modules/rewards/rewards.controller";
+
 export interface CreateAppOptions {
   db: Db;
   jwt: AuthServiceConfig;
@@ -124,6 +140,21 @@ export function createApp(logger: Logger, options: CreateAppOptions): Express {
     auditService,
   });
 
+  // --- Phase 10: loyalty/points/rewards ---
+  const loyaltyRepository = createDbLoyaltyRepository(db);
+  const loyaltyService = new LoyaltyService({ loyaltyRepository, auditService });
+
+  const pointsRepository = createDbPointsRepository(db);
+  const pointsService = new PointsService({ pointsRepository, auditService, loyaltyService });
+
+  const rewardsRepository = createDbRewardsRepository(db);
+  const rewardsService = new RewardsService({
+    rewardsRepository,
+    rewardReservationRepository,
+    pointsService,
+    auditService,
+  });
+
   const syncService = new WordPressSyncService({
     connectionRepository: wordpressConnectionRepository,
     syncJobRepository: wordpressSyncJobRepository,
@@ -136,6 +167,12 @@ export function createApp(logger: Logger, options: CreateAppOptions): Express {
     encryptionKey: integrationEncryptionKey,
     applyCashbackForOrder: (params) => walletService.applyCashbackForOrder(params),
     reverseCashbackForOrder: (woocommerceOrderId) => walletService.reverseCashbackForOrder(woocommerceOrderId),
+    applyPointsForOrder: async (params) => {
+      const pointsPerCurrencyUnit = await loyaltyService.getActivePointsPerCurrencyUnit();
+      if (pointsPerCurrencyUnit <= 0) return null;
+      return pointsService.awardPointsForOrder({ ...params, pointsPerCurrencyUnit });
+    },
+    reversePointsForOrder: (woocommerceOrderId) => pointsService.reversePointsForOrder(woocommerceOrderId),
   });
 
   // Mounted BEFORE the global JSON body parser: this router owns its own
@@ -233,12 +270,19 @@ export function createApp(logger: Logger, options: CreateAppOptions): Express {
   // Authenticated by plugin API key + HMAC signature (see
   // wp-plugin.middleware.ts), never by the admin JWT — this is the only
   // surface the WordPress plugin's PHP layer calls.
-  const wpPluginService = new WpPluginService({ customersRepository, walletService });
+  const wpPluginService = new WpPluginService({
+    customersRepository,
+    walletService,
+    pointsService,
+    rewardsService,
+    loyaltyService,
+  });
   app.use(
     "/api/wp-plugin",
     createWpPluginRouter({
       wpPluginService,
       checkoutService,
+      rewardsService,
       connectionRepository: wordpressConnectionRepository,
       customersRepository,
       encryptionKey: integrationEncryptionKey,
@@ -253,6 +297,19 @@ export function createApp(logger: Logger, options: CreateAppOptions): Express {
   app.use(
     "/api/admin/reward-reservations",
     createRewardReservationsRouter({ checkoutService, accessSecret: jwt.accessSecret }),
+  );
+
+  // --- Phase 10: loyalty, points, rewards admin APIs ---
+  app.use("/api/admin/loyalty", createLoyaltyRouter({ loyaltyService, accessSecret: jwt.accessSecret }));
+  app.use("/api/admin/points", createPointsRouter({ pointsService, accessSecret: jwt.accessSecret }));
+  app.use("/api/admin/rewards", createRewardsRouter({ rewardsService, accessSecret: jwt.accessSecret }));
+  app.use(
+    "/api/admin/reward-claims",
+    createRewardClaimsRouter({ rewardsService, accessSecret: jwt.accessSecret }),
+  );
+  app.use(
+    "/api/admin/reward-redemptions",
+    createRewardRedemptionsRouter({ rewardsService, accessSecret: jwt.accessSecret }),
   );
 
   app.use(notFoundHandler);

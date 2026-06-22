@@ -5,24 +5,30 @@ export interface PublicCustomerProfile {
   status: string;
 }
 
-/**
- * Points/rewards/tier have no backend modules yet (out of scope through
- * Phase 07) — these shapes are stable placeholders so the plugin's
- * dashboard/tab UI has something safe to render without special-casing
- * "feature not built yet." `enabled: false` signals the plugin to show
- * a "coming soon" state rather than a zero balance.
- */
 export interface PublicPointsSummary {
-  enabled: boolean;
-  balanceCents: number;
+  enabled: true;
+  balance: number;
+  lifetimePoints: number;
+}
+
+export interface PublicRewardSummaryItem {
+  claimId: string;
+  rewardId: string;
+  name: string;
+  status: string;
+  expiresAt: string;
 }
 
 export interface PublicRewardsSummary {
-  enabled: boolean;
-  rewards: never[];
+  enabled: true;
+  claimed: PublicRewardSummaryItem[];
+  available: { id: string; name: string; pointsCost: number; rewardType: string }[];
 }
 
 export interface PublicTierSummary {
-  enabled: boolean;
-  tier: string | null;
+  enabled: true;
+  currentTierName: string | null;
+  lifetimePoints: number;
+  nextTierName: string | null;
+  pointsToNextTier: number | null;
 }

@@ -64,6 +64,22 @@ import {
 import { CheckoutService } from "../modules/checkout/checkout.service";
 import { createRewardReservationsRouter, createWalletReservationsRouter } from "../modules/checkout/checkout.controller";
 
+import { createMemoryLoyaltyRepository } from "../modules/loyalty/loyalty.repository.memory";
+import { LoyaltyService } from "../modules/loyalty/loyalty.service";
+import { createLoyaltyRouter } from "../modules/loyalty/loyalty.controller";
+
+import { createMemoryPointsRepository } from "../modules/points/points.repository.memory";
+import { PointsService } from "../modules/points/points.service";
+import { createPointsRouter } from "../modules/points/points.controller";
+
+import { createMemoryRewardsRepository } from "../modules/rewards/rewards.repository.memory";
+import { RewardsService } from "../modules/rewards/rewards.service";
+import {
+  createRewardsRouter,
+  createRewardClaimsRouter,
+  createRewardRedemptionsRouter,
+} from "../modules/rewards/rewards.controller";
+
 import { UserRow } from "../modules/users/users.types";
 import { RoleRow } from "../modules/roles/roles.types";
 import { CustomerRow } from "../modules/customers/customers.types";
@@ -114,6 +130,12 @@ export interface TestAppHarness {
   walletReservationRepository: ReturnType<typeof createMemoryWalletReservationRepository>;
   rewardReservationRepository: ReturnType<typeof createMemoryRewardReservationRepository>;
   checkoutService: CheckoutService;
+  loyaltyRepository: ReturnType<typeof createMemoryLoyaltyRepository>;
+  loyaltyService: LoyaltyService;
+  pointsRepository: ReturnType<typeof createMemoryPointsRepository>;
+  pointsService: PointsService;
+  rewardsRepository: ReturnType<typeof createMemoryRewardsRepository>;
+  rewardsService: RewardsService;
 }
 
 export function buildTestApp(options?: {
@@ -186,6 +208,20 @@ export function buildTestApp(options?: {
     auditService,
   });
 
+  const loyaltyRepository = createMemoryLoyaltyRepository();
+  const loyaltyService = new LoyaltyService({ loyaltyRepository, auditService });
+
+  const pointsRepository = createMemoryPointsRepository();
+  const pointsService = new PointsService({ pointsRepository, auditService, loyaltyService });
+
+  const rewardsRepository = createMemoryRewardsRepository();
+  const rewardsService = new RewardsService({
+    rewardsRepository,
+    rewardReservationRepository,
+    pointsService,
+    auditService,
+  });
+
   const syncService = new WordPressSyncService({
     connectionRepository: wordpressConnectionRepository,
     syncJobRepository: wordpressSyncJobRepository,
@@ -198,6 +234,12 @@ export function buildTestApp(options?: {
     encryptionKey: TEST_INTEGRATION_ENCRYPTION_KEY,
     applyCashbackForOrder: (params) => walletService.applyCashbackForOrder(params),
     reverseCashbackForOrder: (woocommerceOrderId) => walletService.reverseCashbackForOrder(woocommerceOrderId),
+    applyPointsForOrder: async (params) => {
+      const pointsPerCurrencyUnit = await loyaltyService.getActivePointsPerCurrencyUnit();
+      if (pointsPerCurrencyUnit <= 0) return null;
+      return pointsService.awardPointsForOrder({ ...params, pointsPerCurrencyUnit });
+    },
+    reversePointsForOrder: (woocommerceOrderId) => pointsService.reversePointsForOrder(woocommerceOrderId),
   });
 
   app.use(
@@ -262,12 +304,19 @@ export function buildTestApp(options?: {
     createWalletRouter({ walletService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
   );
 
-  const wpPluginService = new WpPluginService({ customersRepository, walletService });
+  const wpPluginService = new WpPluginService({
+    customersRepository,
+    walletService,
+    pointsService,
+    rewardsService,
+    loyaltyService,
+  });
   app.use(
     "/api/wp-plugin",
     createWpPluginRouter({
       wpPluginService,
       checkoutService,
+      rewardsService,
       connectionRepository: wordpressConnectionRepository,
       customersRepository,
       encryptionKey: TEST_INTEGRATION_ENCRYPTION_KEY,
@@ -281,6 +330,18 @@ export function buildTestApp(options?: {
   app.use(
     "/api/admin/reward-reservations",
     createRewardReservationsRouter({ checkoutService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
+  );
+
+  app.use("/api/admin/loyalty", createLoyaltyRouter({ loyaltyService, accessSecret: TEST_JWT_CONFIG.accessSecret }));
+  app.use("/api/admin/points", createPointsRouter({ pointsService, accessSecret: TEST_JWT_CONFIG.accessSecret }));
+  app.use("/api/admin/rewards", createRewardsRouter({ rewardsService, accessSecret: TEST_JWT_CONFIG.accessSecret }));
+  app.use(
+    "/api/admin/reward-claims",
+    createRewardClaimsRouter({ rewardsService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
+  );
+  app.use(
+    "/api/admin/reward-redemptions",
+    createRewardRedemptionsRouter({ rewardsService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
   );
 
   app.use(notFoundHandler);
@@ -309,5 +370,11 @@ export function buildTestApp(options?: {
     walletReservationRepository,
     rewardReservationRepository,
     checkoutService,
+    loyaltyRepository,
+    loyaltyService,
+    pointsRepository,
+    pointsService,
+    rewardsRepository,
+    rewardsService,
   };
 }

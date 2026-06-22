@@ -5,6 +5,7 @@ import { validate } from "@visionprime/validation";
 import { CustomersRepository } from "../customers/customers.repository";
 import { WordPressConnectionRepository } from "../wordpress/wordpress.repository";
 import { CheckoutService } from "../checkout/checkout.service";
+import { RewardsService } from "../rewards/rewards.service";
 import { createPluginAuthMiddleware, PluginAuthedRequest } from "./wp-plugin.middleware";
 import { WpPluginService } from "./wp-plugin.service";
 import {
@@ -18,6 +19,7 @@ import {
 export interface WpPluginControllerDeps {
   wpPluginService: WpPluginService;
   checkoutService: CheckoutService;
+  rewardsService: RewardsService;
   connectionRepository: WordPressConnectionRepository;
   customersRepository: CustomersRepository;
   encryptionKey: string;
@@ -160,7 +162,7 @@ export function createWpPluginRouter(deps: WpPluginControllerDeps): Router {
         sendError(res, "VALIDATION_FAILED", "One or more fields are invalid.", 400, result.fieldErrors);
         return;
       }
-      const outcome = await deps.checkoutService.validateReward(req.vpCustomerId!, result.data!.cartKey, result.data!.rewardId);
+      const outcome = await deps.rewardsService.validateReward(req.vpCustomerId!, result.data!.cartKey, result.data!.rewardId);
       sendSuccess(res, outcome);
     }),
   );
@@ -173,7 +175,7 @@ export function createWpPluginRouter(deps: WpPluginControllerDeps): Router {
         sendError(res, "VALIDATION_FAILED", "One or more fields are invalid.", 400, result.fieldErrors);
         return;
       }
-      const reservation = await deps.checkoutService.reserveReward(req.vpCustomerId!, result.data!.cartKey, result.data!.rewardId);
+      const reservation = await deps.rewardsService.reserveReward(req.vpCustomerId!, result.data!.cartKey, result.data!.rewardId);
       sendSuccess(res, reservation, {}, 201);
     }),
   );
@@ -186,7 +188,7 @@ export function createWpPluginRouter(deps: WpPluginControllerDeps): Router {
         sendError(res, "VALIDATION_FAILED", "One or more fields are invalid.", 400, result.fieldErrors);
         return;
       }
-      const outcome = await deps.checkoutService.releaseReward(result.data!.cartKey);
+      const outcome = await deps.rewardsService.releaseReward(result.data!.cartKey);
       sendSuccess(res, outcome);
     }),
   );
@@ -199,8 +201,30 @@ export function createWpPluginRouter(deps: WpPluginControllerDeps): Router {
         sendError(res, "VALIDATION_FAILED", "One or more fields are invalid.", 400, result.fieldErrors);
         return;
       }
-      const reservation = await deps.checkoutService.confirmReward(result.data!.cartKey, result.data!.woocommerceOrderId);
+      const reservation = await deps.rewardsService.confirmReward(result.data!.cartKey, result.data!.woocommerceOrderId);
       sendSuccess(res, reservation);
+    }),
+  );
+
+  // ---------------------------------------------------------------- //
+  // Reward claim/redeem — see rewards.service.ts. Claiming debits the
+  // customer's points ledger; redeeming transitions a claim's status
+  // atomically and never re-touches the financial ledger.
+  // ---------------------------------------------------------------- //
+
+  router.post(
+    "/rewards/:id/claim",
+    asyncHandler(async (req: PluginAuthedRequest, res) => {
+      const claim = await deps.rewardsService.claimReward(req.params.id, req.vpCustomerId!);
+      sendSuccess(res, claim, {}, 201);
+    }),
+  );
+
+  router.post(
+    "/rewards/:id/redeem",
+    asyncHandler(async (req: PluginAuthedRequest, res) => {
+      const claim = await deps.rewardsService.redeemReward(req.params.id, req.vpCustomerId!);
+      sendSuccess(res, claim);
     }),
   );
 

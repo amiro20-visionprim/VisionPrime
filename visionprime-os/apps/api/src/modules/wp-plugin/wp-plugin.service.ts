@@ -1,11 +1,17 @@
 import { CustomersRepository } from "../customers/customers.repository";
 import { WalletService } from "../wallet/wallet.service";
+import { PointsService } from "../points/points.service";
+import { RewardsService } from "../rewards/rewards.service";
+import { LoyaltyService } from "../loyalty/loyalty.service";
 import { NotFoundError } from "../../common/http-error";
 import { PublicCustomerProfile, PublicPointsSummary, PublicRewardsSummary, PublicTierSummary } from "./wp-plugin.types";
 
 export interface WpPluginServiceDeps {
   customersRepository: CustomersRepository;
   walletService: WalletService;
+  pointsService: PointsService;
+  rewardsService: RewardsService;
+  loyaltyService: LoyaltyService;
 }
 
 export class WpPluginService {
@@ -23,19 +29,44 @@ export class WpPluginService {
     return this.deps.walletService.getWalletSummary(customerId);
   }
 
-  // Points has no backend module yet — stable, explicitly-disabled
-  // placeholder so the plugin's Points tab can render a "coming soon"
-  // state instead of erroring.
-  async getPoints(_customerId: string): Promise<PublicPointsSummary> {
-    return { enabled: false, balanceCents: 0 };
+  async getPoints(customerId: string): Promise<PublicPointsSummary> {
+    const balance = await this.deps.pointsService.getBalance(customerId);
+    return { enabled: true, balance: balance.balance, lifetimePoints: balance.lifetimePoints };
   }
 
-  async getRewards(_customerId: string): Promise<PublicRewardsSummary> {
-    return { enabled: false, rewards: [] };
+  async getRewards(customerId: string): Promise<PublicRewardsSummary> {
+    const { rows: claims } = await this.deps.rewardsService.listClaims(1, 50, customerId);
+    const { rows: rewards } = await this.deps.rewardsService.listRewards(1, 50);
+
+    const claimed = await Promise.all(
+      claims.map(async (claim) => {
+        const reward = rewards.find((r) => r.id === claim.rewardId);
+        return {
+          claimId: claim.id,
+          rewardId: claim.rewardId,
+          name: reward?.name ?? "Reward",
+          status: claim.status,
+          expiresAt: claim.expiresAt,
+        };
+      }),
+    );
+
+    const available = rewards
+      .filter((r) => r.isActive)
+      .map((r) => ({ id: r.id, name: r.name, pointsCost: r.pointsCost, rewardType: r.rewardType }));
+
+    return { enabled: true, claimed, available };
   }
 
-  async getTier(_customerId: string): Promise<PublicTierSummary> {
-    return { enabled: false, tier: null };
+  async getTier(customerId: string): Promise<PublicTierSummary> {
+    const status = await this.deps.loyaltyService.getCustomerStatus(customerId);
+    return {
+      enabled: true,
+      currentTierName: status.currentTier?.name ?? null,
+      lifetimePoints: status.lifetimePoints,
+      nextTierName: status.nextTier?.name ?? null,
+      pointsToNextTier: status.pointsToNextTier,
+    };
   }
 
   async getDashboard(customerId: string) {

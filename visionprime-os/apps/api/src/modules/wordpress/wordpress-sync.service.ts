@@ -32,6 +32,14 @@ export interface WordPressSyncServiceDeps {
     currency?: string;
   }) => Promise<unknown>;
   reverseCashbackForOrder?: (woocommerceOrderId: string) => Promise<unknown>;
+  /** Loyalty points hooks — same closure-injection pattern as the cashback hooks above. */
+  applyPointsForOrder?: (params: {
+    customerId: string;
+    woocommerceOrderId: string;
+    orderTotalMajorUnits: number;
+    currency?: string;
+  }) => Promise<unknown>;
+  reversePointsForOrder?: (woocommerceOrderId: string) => Promise<unknown>;
 }
 
 /** "positive" = counts toward purchase metrics, "negative" = reverses a prior positive effect, "none" = no effect. */
@@ -327,9 +335,20 @@ export class WordPressSyncService {
             currency: remote.currency ?? undefined,
           });
         }
+        if (this.deps.applyPointsForOrder) {
+          await this.deps.applyPointsForOrder({
+            customerId: customer.id,
+            woocommerceOrderId: String(remote.id),
+            orderTotalMajorUnits: Number(row.total),
+            currency: remote.currency ?? undefined,
+          });
+        }
       }
       if (previousEffect === "positive" && newEffect !== "positive" && this.deps.reverseCashbackForOrder) {
         await this.deps.reverseCashbackForOrder(String(remote.id));
+      }
+      if (previousEffect === "positive" && newEffect !== "positive" && this.deps.reversePointsForOrder) {
+        await this.deps.reversePointsForOrder(String(remote.id));
       }
     }
 
@@ -361,6 +380,9 @@ export class WordPressSyncService {
       });
       if (this.deps.reverseCashbackForOrder) {
         await this.deps.reverseCashbackForOrder(woocommerceOrderId);
+      }
+      if (this.deps.reversePointsForOrder) {
+        await this.deps.reversePointsForOrder(woocommerceOrderId);
       }
     }
 
