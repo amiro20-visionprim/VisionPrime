@@ -320,7 +320,6 @@
 				job_type: $form.find('[name=job_type]').val(),
 				topic: $form.find('[name=topic]').val(),
 				keyword: $form.find('[name=keyword]').val(),
-				provider: $form.find('[name=provider]').val(),
 				scheduled_at: $form.find('[name=scheduled_at]').val(),
 				auto_publish: $form.find('[name=auto_publish]').is(':checked') ? 1 : 0
 			}).done(function (res) {
@@ -347,7 +346,6 @@
 				brief: $form.find('[name=brief]').val(),
 				date: $form.find('[name=date]').val(),
 				count: $form.find('[name=count]').val(),
-				provider: $form.find('[name=provider]').val(),
 				auto_publish: $form.find('[name=auto_publish]').is(':checked') ? 1 : 0
 			}).done(function (res) {
 				if (res.success) {

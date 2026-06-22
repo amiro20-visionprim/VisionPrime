@@ -83,8 +83,7 @@ class VP_Admin {
 		$this->view(
 			'calendar',
 			array(
-				'entries'  => VP_Content_Calendar::get_entries(),
-				'providers' => VP_AI_Providers::get_providers(),
+				'entries' => VP_Content_Calendar::get_entries(),
 			)
 		);
 	}

@@ -9,23 +9,32 @@
 		<?php endif; ?>
 	</div>
 
-	<div class="vp-card">
-		<h2>تاریخچه‌ی رتبه</h2>
-		<p>
-			<label>کوئری: <input type="text" id="vp-rank-query" class="regular-text"></label>
-			<label>صفحه: <input type="text" id="vp-rank-page" class="regular-text"></label>
-			<button id="vp-rank-history-btn" class="button button-primary">نمایش تاریخچه</button>
-		</p>
-		<div id="vp-rank-history-result"></div>
-	</div>
+	<nav class="vp-tabs">
+		<button type="button" class="vp-tab-btn vp-tab-active" data-tab="history">تاریخچه‌ی رتبه</button>
+		<button type="button" class="vp-tab-btn" data-tab="decay">تشخیص افت محتوا</button>
+	</nav>
 
-	<div class="vp-card">
-		<h2>تشخیص افت محتوا (Content Decay)</h2>
-		<p>
-			<label>بازه‌ی مقایسه (روز): <input type="number" id="vp-decay-window" value="30" min="7" max="180" class="small-text"></label>
-			<label>حداقل درصد افت: <input type="number" id="vp-decay-ratio" value="25" min="5" max="90" class="small-text"></label>
-			<button id="vp-decay-scan-btn" class="button button-primary">بررسی افت محتوا</button>
-		</p>
-		<div id="vp-decay-result"></div>
-	</div>
+	<section class="vp-tab-panel" data-tab="history">
+		<div class="vp-card">
+			<h2>تاریخچه‌ی رتبه</h2>
+			<p>
+				<label>کوئری: <input type="text" id="vp-rank-query" class="regular-text"></label>
+				<label>صفحه: <input type="text" id="vp-rank-page" class="regular-text"></label>
+				<button id="vp-rank-history-btn" class="button button-primary">نمایش تاریخچه</button>
+			</p>
+			<div id="vp-rank-history-result"></div>
+		</div>
+	</section>
+
+	<section class="vp-tab-panel" data-tab="decay" hidden>
+		<div class="vp-card">
+			<h2>تشخیص افت محتوا (Content Decay)</h2>
+			<p>
+				<label>بازه‌ی مقایسه (روز): <input type="number" id="vp-decay-window" value="30" min="7" max="180" class="small-text"></label>
+				<label>حداقل درصد افت: <input type="number" id="vp-decay-ratio" value="25" min="5" max="90" class="small-text"></label>
+				<button id="vp-decay-scan-btn" class="button button-primary">بررسی افت محتوا</button>
+			</p>
+			<div id="vp-decay-result"></div>
+		</div>
+	</section>
 </div>
