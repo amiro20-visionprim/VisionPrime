@@ -132,6 +132,11 @@ export interface Customer {
   wordpress_user_id: string | null;
   woocommerce_customer_id: string | null;
   status: string;
+  purchase_count: number;
+  total_spent: string;
+  average_order_value: string;
+  last_purchase_at: string | null;
+  lifetime_value: string;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -168,12 +173,69 @@ export interface CustomerEvent {
   created_at: string;
 }
 
+export interface Customer360Order {
+  id: string;
+  woocommerce_order_id: string;
+  status: string;
+  currency: string | null;
+  total: string;
+  ordered_at: string | null;
+  created_at: string;
+}
+
 export interface Customer360 {
   customer: Customer;
   notes: CustomerNote[];
   tags: CustomerTag[];
   identities: CustomerIdentity[];
   events: CustomerEvent[];
+  orders: Customer360Order[];
+}
+
+export interface Order {
+  id: string;
+  customer_id: string;
+  woocommerce_order_id: string;
+  status: string;
+  currency: string | null;
+  total: string;
+  ordered_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrderItem {
+  id: string;
+  order_id: string;
+  woocommerce_product_id: string | null;
+  name: string;
+  quantity: number;
+  price: string;
+  total: string;
+  created_at: string;
+}
+
+export interface OrderEvent {
+  id: string;
+  order_id: string;
+  event_type: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface OrderDetail {
+  order: Order;
+  items: OrderItem[];
+  events: OrderEvent[];
+}
+
+export interface WordPressWebhookEventRow {
+  id: string;
+  event_type: string;
+  status: string;
+  detail: string | null;
+  delivery_id: string | null;
+  created_at: string;
 }
 
 export interface Product {

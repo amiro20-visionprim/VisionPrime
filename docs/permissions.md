@@ -57,6 +57,9 @@
 | `product:view` | `GET /api/admin/products`, `GET /api/admin/products/:id`, `GET /api/admin/product-categories` |
 | `wordpress:sync_customer` | `POST /api/admin/integrations/wordpress/sync/customers`, part of `/sync/incremental` |
 | `wordpress:sync_product` | `POST /api/admin/integrations/wordpress/sync/products`, part of `/sync/incremental` |
+| `order:view` | `GET /api/admin/orders`, `GET /api/admin/orders/:id` |
+| `order:sync` | `POST /api/admin/orders/sync-from-wordpress` |
+| `wordpress:webhook:view` | `GET /api/admin/integrations/wordpress/webhooks/events` |
 
 Permissions are **system-defined**: they are seeded once via the
 `0001_auth_rbac_settings_audit.sql` migration and are immutable through

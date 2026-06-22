@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from "crypto";
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from "crypto";
 
 /**
  * AES-256-GCM at-rest encryption for integration secrets (WooCommerce
@@ -37,6 +37,26 @@ export function decryptSecret(encrypted: string, encryptionKey: string): string 
  * common/auth/password.ts), kept separate since the call sites differ.
  */
 export { hashPassword as hashPluginApiKey, verifyPassword as verifyPluginApiKey } from "./auth/password";
+
+/**
+ * Verifies a WooCommerce-style webhook signature: base64(HMAC-SHA256(raw
+ * request body, shared secret)), compared against the
+ * `X-WC-Webhook-Signature` header value using a timing-safe comparison.
+ * Must be called against the *raw* (un-parsed) body — a re-serialized
+ * JSON body will not byte-for-byte match what was signed.
+ */
+export function verifyWebhookSignature(rawBody: Buffer | string, signatureHeader: string | undefined, secret: string): boolean {
+  if (!signatureHeader) {
+    return false;
+  }
+  const expected = createHmac("sha256", secret).update(rawBody).digest("base64");
+  const expectedBuffer = Buffer.from(expected);
+  const actualBuffer = Buffer.from(signatureHeader);
+  if (expectedBuffer.length !== actualBuffer.length) {
+    return false;
+  }
+  return timingSafeEqual(expectedBuffer, actualBuffer);
+}
 
 export function maskSecretPreview(plaintext: string): string {
   if (plaintext.length <= 4) {

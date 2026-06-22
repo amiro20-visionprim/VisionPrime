@@ -195,4 +195,10 @@ export class WordPressService {
     const result = await this.deps.syncLogRepository.list(params.page, params.pageSize);
     return { rows: result.rows, meta: toPaginationMeta(params.page, params.pageSize, result.totalItems) };
   }
+
+  async listWebhookEvents(page?: unknown, pageSize?: unknown) {
+    const params = normalizePageParams(page, pageSize);
+    const result = await this.deps.webhookEventRepository.list(params.page, params.pageSize);
+    return { rows: result.rows, meta: toPaginationMeta(params.page, params.pageSize, result.totalItems) };
+  }
 }

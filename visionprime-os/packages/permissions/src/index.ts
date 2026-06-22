@@ -41,6 +41,11 @@ export const SYSTEM_PERMISSIONS = [
   "product:view",
   "wordpress:sync_customer",
   "wordpress:sync_product",
+
+  // --- Phase 06: WooCommerce order sync, order webhooks, customer purchase metrics ---
+  "order:view",
+  "order:sync",
+  "wordpress:webhook:view",
 ] as const;
 
 export type Permission = (typeof SYSTEM_PERMISSIONS)[number];

@@ -35,6 +35,7 @@ import { WordPressService } from "../modules/wordpress/wordpress.service";
 import { WordPressSyncService } from "../modules/wordpress/wordpress-sync.service";
 import { WooCommerceApiClient } from "../modules/wordpress/wordpress-sync.types";
 import { createWordPressRouter } from "../modules/wordpress/wordpress.controller";
+import { createWordPressWebhooksRouter } from "../modules/wordpress/wordpress-webhooks.controller";
 
 import { createMemoryCustomersRepository } from "../modules/customers/customers.repository.memory";
 import { CustomersService } from "../modules/customers/customers.service";
@@ -43,6 +44,10 @@ import { createCustomersRouter } from "../modules/customers/customers.controller
 import { createMemoryProductsRepository } from "../modules/products/products.repository.memory";
 import { ProductsService } from "../modules/products/products.service";
 import { createProductCategoriesRouter, createProductsRouter } from "../modules/products/products.controller";
+
+import { createMemoryOrdersRepository } from "../modules/orders/orders.repository.memory";
+import { OrdersService } from "../modules/orders/orders.service";
+import { createOrdersRouter } from "../modules/orders/orders.controller";
 
 import { UserRow } from "../modules/users/users.types";
 import { RoleRow } from "../modules/roles/roles.types";
@@ -55,6 +60,7 @@ export function createFakeWooCommerceApiClient(overrides?: Partial<WooCommerceAp
     fetchCustomers: async () => [],
     fetchProducts: async () => [],
     fetchCategories: async () => [],
+    fetchOrders: async () => [],
     ...overrides,
   };
 }
@@ -82,6 +88,9 @@ export interface TestAppHarness {
   productsRepository: ReturnType<typeof createMemoryProductsRepository>;
   customersService: CustomersService;
   productsService: ProductsService;
+  ordersRepository: ReturnType<typeof createMemoryOrdersRepository>;
+  ordersService: OrdersService;
+  wordpressWebhookEventRepository: ReturnType<typeof createMemoryWordPressWebhookEventRepository>;
 }
 
 export function buildTestApp(options?: {
@@ -92,8 +101,6 @@ export function buildTestApp(options?: {
   wooCommerceClient?: WooCommerceApiClient;
 }): TestAppHarness {
   const app = express();
-  app.use(express.json());
-  app.use(requestContextMiddleware);
 
   const auditLogRepository = createMemoryAuditLogRepository();
   const activityLogRepository = createMemoryActivityLogRepository();
@@ -137,6 +144,36 @@ export function buildTestApp(options?: {
     encryptionKey: TEST_INTEGRATION_ENCRYPTION_KEY,
   });
 
+  const wordpressEntityMappingRepository = createMemoryWordPressEntityMappingRepository();
+  const customersRepository = createMemoryCustomersRepository(options?.customers ?? []);
+  const productsRepository = createMemoryProductsRepository(options?.products ?? []);
+  const ordersRepository = createMemoryOrdersRepository();
+
+  const syncService = new WordPressSyncService({
+    connectionRepository: wordpressConnectionRepository,
+    syncJobRepository: wordpressSyncJobRepository,
+    syncLogRepository: wordpressSyncLogRepository,
+    entityMappingRepository: wordpressEntityMappingRepository,
+    customersRepository,
+    productsRepository,
+    ordersRepository,
+    wooCommerceClient: options?.wooCommerceClient ?? createFakeWooCommerceApiClient(),
+    encryptionKey: TEST_INTEGRATION_ENCRYPTION_KEY,
+  });
+
+  app.use(
+    "/api/webhooks/wordpress",
+    createWordPressWebhooksRouter({
+      connectionRepository: wordpressConnectionRepository,
+      webhookEventRepository: wordpressWebhookEventRepository,
+      syncService,
+      encryptionKey: TEST_INTEGRATION_ENCRYPTION_KEY,
+    }),
+  );
+
+  app.use(express.json());
+  app.use(requestContextMiddleware);
+
   app.use("/api/admin/auth", createAuthRouter({ authService, accessSecret: TEST_JWT_CONFIG.accessSecret }));
   app.use("/api/admin/users", createUsersRouter({ usersService, accessSecret: TEST_JWT_CONFIG.accessSecret }));
   app.use("/api/admin/roles", createRolesRouter({ rolesService, accessSecret: TEST_JWT_CONFIG.accessSecret }));
@@ -146,15 +183,16 @@ export function buildTestApp(options?: {
   );
   app.use("/api/admin", createAuditRouter({ auditService, accessSecret: TEST_JWT_CONFIG.accessSecret }));
 
-  const wordpressEntityMappingRepository = createMemoryWordPressEntityMappingRepository();
-  const customersRepository = createMemoryCustomersRepository(options?.customers ?? []);
-  const customersService = new CustomersService({ customersRepository, auditService });
+  const customersService = new CustomersService({
+    customersRepository,
+    auditService,
+    listOrdersByCustomer: (customerId: string) => ordersRepository.listByCustomer(customerId),
+  });
   app.use(
     "/api/admin/customers",
     createCustomersRouter({ customersService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
   );
 
-  const productsRepository = createMemoryProductsRepository(options?.products ?? []);
   const productsService = new ProductsService({ productsRepository });
   app.use(
     "/api/admin/products",
@@ -165,20 +203,19 @@ export function buildTestApp(options?: {
     createProductCategoriesRouter({ productsService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
   );
 
-  const syncService = new WordPressSyncService({
-    connectionRepository: wordpressConnectionRepository,
-    syncJobRepository: wordpressSyncJobRepository,
-    syncLogRepository: wordpressSyncLogRepository,
-    entityMappingRepository: wordpressEntityMappingRepository,
-    customersRepository,
-    productsRepository,
-    wooCommerceClient: options?.wooCommerceClient ?? createFakeWooCommerceApiClient(),
-    encryptionKey: TEST_INTEGRATION_ENCRYPTION_KEY,
-  });
-
   app.use(
     "/api/admin/integrations/wordpress",
     createWordPressRouter({ wordpressService, syncService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
+  );
+
+  const ordersService = new OrdersService({ ordersRepository });
+  app.use(
+    "/api/admin/orders",
+    createOrdersRouter({
+      ordersService,
+      syncOrdersFromWordPress: (actorId: string) => syncService.syncOrders(actorId),
+      accessSecret: TEST_JWT_CONFIG.accessSecret,
+    }),
   );
 
   app.use(notFoundHandler);
@@ -198,5 +235,8 @@ export function buildTestApp(options?: {
     productsRepository,
     customersService,
     productsService,
+    ordersRepository,
+    ordersService,
+    wordpressWebhookEventRepository,
   };
 }

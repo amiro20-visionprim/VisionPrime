@@ -6,10 +6,13 @@ import {
   Badge,
   Button,
   Can,
+  DataTable,
+  DataTableColumn,
   ErrorState,
   FormField,
   Input,
   LoadingState,
+  MetricCard,
   PageHeader,
   StatusBadge,
   Tabs,
@@ -18,12 +21,14 @@ import {
 import { apiClient } from "../../../lib/api-client";
 import { useAuth } from "../../../lib/auth-client";
 import { friendlyErrorMessage } from "../../../lib/error-message";
-import { Customer360 } from "../../../lib/types";
+import { Customer360, Customer360Order } from "../../../lib/types";
 
-type TabKey = "overview" | "notes" | "tags" | "identities" | "events";
+type TabKey = "overview" | "metrics" | "orders" | "notes" | "tags" | "identities" | "events";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "overview", label: "Overview" },
+  { key: "metrics", label: "Metrics" },
+  { key: "orders", label: "Orders" },
   { key: "notes", label: "Notes" },
   { key: "tags", label: "Tags" },
   { key: "identities", label: "Identities" },
@@ -101,7 +106,14 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
     return <ErrorState message={error ?? "Unable to load customer."} action={<Button onClick={load}>Retry</Button>} />;
   }
 
-  const { customer, notes, tags, identities, events } = data;
+  const { customer, notes, tags, identities, events, orders } = data;
+
+  const orderColumns: DataTableColumn<Customer360Order>[] = [
+    { key: "woocommerce_order_id", header: "Order #" },
+    { key: "status", header: "Status", render: (row) => <StatusBadge status={row.status} /> },
+    { key: "total", header: "Total", render: (row) => `${row.total}${row.currency ? ` ${row.currency}` : ""}` },
+    { key: "ordered_at", header: "Ordered", render: (row) => (row.ordered_at ? new Date(row.ordered_at).toLocaleString() : "—") },
+  ];
 
   return (
     <div>
@@ -140,6 +152,28 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
               <strong>Created:</strong> {new Date(customer.created_at).toLocaleString()}
             </p>
           </div>
+        ) : null}
+
+        {activeTab === "metrics" ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem", maxWidth: 720 }}>
+            <MetricCard label="Purchase Count" value={customer.purchase_count} />
+            <MetricCard label="Total Spent" value={customer.total_spent} />
+            <MetricCard label="Average Order Value" value={customer.average_order_value} />
+            <MetricCard label="Lifetime Value" value={customer.lifetime_value} />
+            <MetricCard
+              label="Last Purchase"
+              value={customer.last_purchase_at ? new Date(customer.last_purchase_at).toLocaleString() : "—"}
+            />
+          </div>
+        ) : null}
+
+        {activeTab === "orders" ? (
+          <DataTable<Customer360Order>
+            columns={orderColumns}
+            rows={orders}
+            emptyTitle="No orders yet."
+            emptyDescription="Orders will appear here once synced from WooCommerce."
+          />
         ) : null}
 
         {activeTab === "notes" ? (

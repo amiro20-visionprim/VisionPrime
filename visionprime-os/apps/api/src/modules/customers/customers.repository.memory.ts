@@ -4,6 +4,7 @@ import {
   CustomerEventRow,
   CustomerIdentityRow,
   CustomerNoteRow,
+  CustomerPurchaseMetricsDelta,
   CustomerRow,
   CustomerTagRow,
   ListCustomersParams,
@@ -90,6 +91,11 @@ export function createMemoryCustomersRepository(seed: CustomerRow[] = []) {
         wordpress_user_id: record.wordpressUserId ?? null,
         woocommerce_customer_id: record.woocommerceCustomerId ?? null,
         status: record.status ?? "active",
+        purchase_count: 0,
+        total_spent: "0",
+        average_order_value: "0",
+        last_purchase_at: null,
+        lifetime_value: "0",
         created_at: now,
         updated_at: now,
         deleted_at: null,
@@ -225,6 +231,24 @@ export function createMemoryCustomersRepository(seed: CustomerRow[] = []) {
         actor_id: actorId,
         created_at: new Date().toISOString(),
       });
+    },
+
+    async applyPurchaseMetricsDelta(customerId: string, delta: CustomerPurchaseMetricsDelta): Promise<CustomerRow> {
+      const row = rows.find((r) => r.id === customerId);
+      if (!row) {
+        throw new Error("Customer not found");
+      }
+      const newCount = Math.max(0, row.purchase_count + delta.purchaseCountDelta);
+      const newTotal = Math.max(0, Number(row.total_spent) + delta.totalSpentDelta);
+      row.purchase_count = newCount;
+      row.total_spent = String(newTotal);
+      row.lifetime_value = String(newTotal);
+      row.average_order_value = String(newCount > 0 ? newTotal / newCount : 0);
+      if (delta.lastPurchaseAt !== undefined && delta.lastPurchaseAt !== null) {
+        row.last_purchase_at = delta.lastPurchaseAt;
+      }
+      row.updated_at = new Date().toISOString();
+      return row;
     },
   };
 

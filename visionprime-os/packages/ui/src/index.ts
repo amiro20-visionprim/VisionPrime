@@ -20,3 +20,4 @@ export * from "./DropdownMenu";
 export * from "./Pagination";
 export * from "./FilterBar";
 export * from "./Can";
+export * from "./Timeline";

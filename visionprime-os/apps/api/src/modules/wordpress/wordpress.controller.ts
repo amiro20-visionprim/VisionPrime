@@ -98,5 +98,15 @@ export function createWordPressRouter(deps: WordPressControllerDeps): Router {
     }),
   );
 
+  router.get(
+    "/webhooks/events",
+    requireAuth,
+    requirePermission("wordpress:webhook:view"),
+    asyncHandler(async (req, res) => {
+      const { rows, meta } = await deps.wordpressService.listWebhookEvents(req.query.page, req.query.pageSize);
+      sendSuccess(res, rows, { ...meta });
+    }),
+  );
+
   return router;
 }

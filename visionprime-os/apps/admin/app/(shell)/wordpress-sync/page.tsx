@@ -24,6 +24,7 @@ import {
   WordPressConnection,
   WordPressSyncJobRowWithMetadata,
   WordPressSyncLogRow,
+  WordPressWebhookEventRow,
 } from "../../lib/types";
 
 type TabKey =
@@ -58,6 +59,7 @@ export default function WordPressSyncPage() {
   const canRegisterWebhook = isSuperAdmin || permissions.includes("wordpress:webhook_register");
   const canSyncCustomers = isSuperAdmin || permissions.includes("wordpress:sync_customer");
   const canSyncProducts = isSuperAdmin || permissions.includes("wordpress:sync_product");
+  const canSyncOrders = isSuperAdmin || permissions.includes("order:sync");
   const { showToast } = useToast();
 
   const [activeTab, setActiveTab] = useState<TabKey>("connection");
@@ -72,6 +74,7 @@ export default function WordPressSyncPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [isSyncingCustomers, setIsSyncingCustomers] = useState(false);
   const [isSyncingProducts, setIsSyncingProducts] = useState(false);
+  const [isSyncingOrders, setIsSyncingOrders] = useState(false);
   const [syncJobsReloadKey, setSyncJobsReloadKey] = useState(0);
 
   const load = useCallback(async () => {
@@ -195,6 +198,24 @@ export default function WordPressSyncPage() {
     }
   }
 
+  async function handleSyncOrders() {
+    setIsSyncingOrders(true);
+    try {
+      const result = await apiClient.post<{ counts: { created: number; updated: number; failed: number; total: number } }>(
+        "/api/admin/orders/sync-from-wordpress",
+      );
+      showToast(
+        `Order sync finished: ${result.counts.created} created, ${result.counts.updated} updated, ${result.counts.failed} failed.`,
+        result.counts.failed > 0 ? "error" : "success",
+      );
+      setSyncJobsReloadKey((k) => k + 1);
+    } catch (err) {
+      showToast(friendlyErrorMessage(err), "error");
+    } finally {
+      setIsSyncingOrders(false);
+    }
+  }
+
   return (
     <div>
       <PageHeader title="WordPress Sync" description="Manage the WooCommerce/WordPress connection." />
@@ -252,7 +273,12 @@ export default function WordPressSyncPage() {
                       Sync Products
                     </Button>
                   ) : null}
-                  {!canSyncCustomers && !canSyncProducts ? (
+                  {canSyncOrders ? (
+                    <Button onClick={handleSyncOrders} isLoading={isSyncingOrders}>
+                      Sync Orders
+                    </Button>
+                  ) : null}
+                  {!canSyncCustomers && !canSyncProducts && !canSyncOrders ? (
                     <p>You don't have permission to run a manual sync.</p>
                   ) : null}
                 </div>
@@ -267,6 +293,7 @@ export default function WordPressSyncPage() {
                   canRegisterWebhook={canRegisterWebhook}
                   isRegistering={isRegisteringWebhook}
                   onRegister={handleRegisterWebhook}
+                  userPermissions={userPermissions}
                 />
               ) : null}
 
@@ -450,34 +477,100 @@ function WebhooksTab({
   canRegisterWebhook,
   isRegistering,
   onRegister,
+  userPermissions,
 }: {
   connection: WordPressConnection;
   canRegisterWebhook: boolean;
   isRegistering: boolean;
   onRegister: () => void;
+  userPermissions: string[] | undefined;
 }) {
   return (
-    <div style={{ maxWidth: 480 }}>
-      <div style={{ marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-        <span>Registration status:</span>
-        <StatusBadge status={connection.webhookRegistrationStatus} />
+    <div>
+      <div style={{ maxWidth: 480 }}>
+        <div style={{ marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <span>Registration status:</span>
+          <StatusBadge status={connection.webhookRegistrationStatus} />
+        </div>
+        {connection.webhookRegisteredAt ? (
+          <p style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "1rem" }}>
+            Registered {new Date(connection.webhookRegisteredAt).toLocaleString()}.
+          </p>
+        ) : null}
+        {canRegisterWebhook ? (
+          <Button onClick={onRegister} isLoading={isRegistering} disabled={!connection.hasSharedSecret || !connection.siteUrl}>
+            Register Webhooks
+          </Button>
+        ) : null}
+        {!connection.hasSharedSecret ? (
+          <p style={{ fontSize: "0.875rem", color: "#6b7280", marginTop: "0.5rem" }}>
+            Save a shared secret on the Connection tab before registering webhooks.
+          </p>
+        ) : null}
       </div>
-      {connection.webhookRegisteredAt ? (
-        <p style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "1rem" }}>
-          Registered {new Date(connection.webhookRegisteredAt).toLocaleString()}.
-        </p>
-      ) : null}
-      {canRegisterWebhook ? (
-        <Button onClick={onRegister} isLoading={isRegistering} disabled={!connection.hasSharedSecret || !connection.siteUrl}>
-          Register Webhooks
-        </Button>
-      ) : null}
-      {!connection.hasSharedSecret ? (
-        <p style={{ fontSize: "0.875rem", color: "#6b7280", marginTop: "0.5rem" }}>
-          Save a shared secret on the Connection tab before registering webhooks.
-        </p>
-      ) : null}
+
+      <div style={{ marginTop: "2rem" }}>
+        <h3 style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: "0.75rem" }}>Webhook Events</h3>
+        <Can permission="wordpress:webhook:view" userPermissions={userPermissions} fallback={<p>You don't have permission to view webhook events.</p>}>
+          <WebhookEventsTable />
+        </Can>
+      </div>
     </div>
+  );
+}
+
+function WebhookEventsTable() {
+  const [rows, setRows] = useState<WordPressWebhookEventRow[]>([]);
+  const [meta, setMeta] = useState<PaginationMeta>({ page: 1, pageSize: PAGE_SIZE, totalItems: 0, totalPages: 1 });
+  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | undefined>(undefined);
+
+  const load = useCallback(async (targetPage: number) => {
+    setIsLoading(true);
+    setError(undefined);
+    try {
+      const result = await apiClient.getWithMeta<WordPressWebhookEventRow[]>(
+        `/api/admin/integrations/wordpress/webhooks/events?page=${targetPage}&pageSize=${PAGE_SIZE}`,
+      );
+      setRows(result.data);
+      setMeta(result.meta as unknown as PaginationMeta);
+    } catch (err) {
+      setError(friendlyErrorMessage(err));
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load(page);
+  }, [page, load]);
+
+  const columns: DataTableColumn<WordPressWebhookEventRow>[] = [
+    { key: "created_at", header: "Time", render: (row) => new Date(row.created_at).toLocaleString() },
+    { key: "event_type", header: "Event Type" },
+    { key: "status", header: "Status", render: (row) => <StatusBadge status={row.status} /> },
+    { key: "delivery_id", header: "Delivery ID", render: (row) => row.delivery_id ?? "—" },
+    { key: "detail", header: "Detail", render: (row) => row.detail ?? "—" },
+  ];
+
+  return (
+    <DataTable<WordPressWebhookEventRow>
+      columns={columns}
+      rows={rows}
+      isLoading={isLoading}
+      error={error}
+      onRetry={() => load(page)}
+      emptyTitle="No webhook events yet."
+      emptyDescription="Webhook events will appear here once WordPress sends order notifications."
+      pagination={{
+        page: meta.page,
+        pageSize: meta.pageSize,
+        totalItems: meta.totalItems,
+        totalPages: meta.totalPages,
+        onPageChange: setPage,
+      }}
+    />
   );
 }
 

@@ -4,6 +4,7 @@ import {
   CustomerEventRow,
   CustomerIdentityRow,
   CustomerNoteRow,
+  CustomerPurchaseMetricsDelta,
   CustomerRow,
   CustomerTagRow,
   ListCustomersParams,
@@ -221,6 +222,26 @@ export function createDbCustomersRepository(db: Db): CustomersRepository {
           actorId,
         ],
       );
+    },
+
+    async applyPurchaseMetricsDelta(customerId: string, delta: CustomerPurchaseMetricsDelta): Promise<CustomerRow> {
+      const result = await db.query<CustomerRow>(
+        `update customers set
+           purchase_count = greatest(0, purchase_count + $2),
+           total_spent = greatest(0, total_spent + $3),
+           lifetime_value = greatest(0, lifetime_value + $3),
+           average_order_value = case
+             when greatest(0, purchase_count + $2) > 0
+               then greatest(0, total_spent + $3) / greatest(0, purchase_count + $2)
+             else 0
+           end,
+           last_purchase_at = coalesce($4, last_purchase_at),
+           updated_at = now()
+         where id = $1
+         returning *`,
+        [customerId, delta.purchaseCountDelta, delta.totalSpentDelta, delta.lastPurchaseAt ?? null],
+      );
+      return result.rows[0];
     },
   };
 }

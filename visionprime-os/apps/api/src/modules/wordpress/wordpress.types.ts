@@ -65,6 +65,7 @@ export interface WordPressWebhookEventRow {
   status: string;
   detail: string | null;
   metadata: Record<string, unknown>;
+  delivery_id: string | null;
   created_at: string;
 }
 

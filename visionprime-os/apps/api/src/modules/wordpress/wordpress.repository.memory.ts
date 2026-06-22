@@ -166,9 +166,13 @@ export function createMemoryWordPressEntityMappingRepository(): WordPressEntityM
   };
 }
 
-export function createMemoryWordPressWebhookEventRepository(): WordPressWebhookEventRepository {
+export function createMemoryWordPressWebhookEventRepository(): WordPressWebhookEventRepository & {
+  __rows: WordPressWebhookEventRow[];
+} {
   const rows: WordPressWebhookEventRow[] = [];
   return {
+    __rows: rows,
+
     async insert(entry): Promise<WordPressWebhookEventRow> {
       const row: WordPressWebhookEventRow = {
         id: randomUUID(),
@@ -176,9 +180,30 @@ export function createMemoryWordPressWebhookEventRepository(): WordPressWebhookE
         status: entry.status,
         detail: entry.detail,
         metadata: entry.metadata,
+        delivery_id: entry.delivery_id ?? null,
         created_at: new Date().toISOString(),
       };
       rows.push(row);
+      return row;
+    },
+
+    async findByDeliveryId(deliveryId: string): Promise<WordPressWebhookEventRow | null> {
+      return rows.find((r) => r.delivery_id === deliveryId) ?? null;
+    },
+
+    async list(page: number, pageSize: number) {
+      const start = (page - 1) * pageSize;
+      const sorted = [...rows].sort((a, b) => b.created_at.localeCompare(a.created_at));
+      return { rows: sorted.slice(start, start + pageSize), totalItems: rows.length };
+    },
+
+    async updateStatus(id: string, status: string, detail?: string | null): Promise<WordPressWebhookEventRow> {
+      const row = rows.find((r) => r.id === id);
+      if (!row) {
+        throw new Error("Webhook event not found");
+      }
+      row.status = status;
+      if (detail !== undefined && detail !== null) row.detail = detail;
       return row;
     },
   };

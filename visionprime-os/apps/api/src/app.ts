@@ -42,6 +42,7 @@ import { WordPressService } from "./modules/wordpress/wordpress.service";
 import { WordPressSyncService } from "./modules/wordpress/wordpress-sync.service";
 import { createFetchWooCommerceApiClient } from "./modules/wordpress/wordpress-sync.types";
 import { createWordPressRouter } from "./modules/wordpress/wordpress.controller";
+import { createWordPressWebhooksRouter } from "./modules/wordpress/wordpress-webhooks.controller";
 
 import { createDbCustomersRepository } from "./modules/customers/customers.repository.db";
 import { CustomersService } from "./modules/customers/customers.service";
@@ -50,6 +51,10 @@ import { createCustomersRouter } from "./modules/customers/customers.controller"
 import { createDbProductsRepository } from "./modules/products/products.repository.db";
 import { ProductsService } from "./modules/products/products.service";
 import { createProductCategoriesRouter, createProductsRouter } from "./modules/products/products.controller";
+
+import { createDbOrdersRepository } from "./modules/orders/orders.repository.db";
+import { OrdersService } from "./modules/orders/orders.service";
+import { createOrdersRouter } from "./modules/orders/orders.controller";
 
 export interface CreateAppOptions {
   db: Db;
@@ -70,17 +75,58 @@ export function createApp(logger: Logger, options: CreateAppOptions): Express {
   const { db, jwt, integrationEncryptionKey } = options;
 
   app.use(cors());
-  app.use(express.json());
-  app.use(requestContextMiddleware);
-
-  app.use("/api", healthRouter);
-  app.use("/api", versionRouter);
 
   // --- Phase 03: auth, RBAC, business settings, audit/security logging ---
   const auditLogRepository = createDbAuditLogRepository(db);
   const activityLogRepository = createDbActivityLogRepository(db);
   const securityEventRepository = createDbSecurityEventRepository(db);
   const auditService = new AuditService({ auditLogRepository, activityLogRepository, securityEventRepository });
+
+  // --- Phase 04: WordPress/WooCommerce connection management ---
+  const wordpressConnectionRepository = createDbWordPressConnectionRepository(db);
+  const wordpressSyncJobRepository = createDbWordPressSyncJobRepository(db);
+  const wordpressSyncLogRepository = createDbWordPressSyncLogRepository(db);
+  const wordpressWebhookEventRepository = createDbWordPressWebhookEventRepository(db);
+  const wordpressEntityMappingRepository = createDbWordPressEntityMappingRepository(db);
+
+  // --- Phase 05: customer/product modules ---
+  const customersRepository = createDbCustomersRepository(db);
+  const productsRepository = createDbProductsRepository(db);
+
+  // --- Phase 06: orders ---
+  const ordersRepository = createDbOrdersRepository(db);
+
+  const syncService = new WordPressSyncService({
+    connectionRepository: wordpressConnectionRepository,
+    syncJobRepository: wordpressSyncJobRepository,
+    syncLogRepository: wordpressSyncLogRepository,
+    entityMappingRepository: wordpressEntityMappingRepository,
+    customersRepository,
+    productsRepository,
+    ordersRepository,
+    wooCommerceClient: createFetchWooCommerceApiClient(),
+    encryptionKey: integrationEncryptionKey,
+  });
+
+  // Mounted BEFORE the global JSON body parser: this router owns its own
+  // raw-body-capturing JSON parser (needed for HMAC signature
+  // verification) and is never gated by requireAuth/JWT — only by webhook
+  // signature verification. Must stay outside /api/admin.
+  app.use(
+    "/api/webhooks/wordpress",
+    createWordPressWebhooksRouter({
+      connectionRepository: wordpressConnectionRepository,
+      webhookEventRepository: wordpressWebhookEventRepository,
+      syncService,
+      encryptionKey: integrationEncryptionKey,
+    }),
+  );
+
+  app.use(express.json());
+  app.use(requestContextMiddleware);
+
+  app.use("/api", healthRouter);
+  app.use("/api", versionRouter);
 
   const usersRepository = createDbUsersRepository(db);
   const rolesRepository = createDbRolesRepository(db);
@@ -95,6 +141,8 @@ export function createApp(logger: Logger, options: CreateAppOptions): Express {
     auditService,
     config: jwt,
   });
+  const listOrdersByCustomer = (customerId: string) => ordersRepository.listByCustomer(customerId);
+
   const usersService = new UsersService({ usersRepository, auditService });
   const rolesService = new RolesService({ rolesRepository, usersRepository, auditService });
   const permissionsService = new PermissionsService(permissionsRepository);
@@ -110,11 +158,6 @@ export function createApp(logger: Logger, options: CreateAppOptions): Express {
   );
   app.use("/api/admin", createAuditRouter({ auditService, accessSecret: jwt.accessSecret }));
 
-  // --- Phase 04: WordPress/WooCommerce connection management ---
-  const wordpressConnectionRepository = createDbWordPressConnectionRepository(db);
-  const wordpressSyncJobRepository = createDbWordPressSyncJobRepository(db);
-  const wordpressSyncLogRepository = createDbWordPressSyncLogRepository(db);
-  const wordpressWebhookEventRepository = createDbWordPressWebhookEventRepository(db);
   const wordpressService = new WordPressService({
     connectionRepository: wordpressConnectionRepository,
     syncJobRepository: wordpressSyncJobRepository,
@@ -123,14 +166,11 @@ export function createApp(logger: Logger, options: CreateAppOptions): Express {
     auditService,
     encryptionKey: integrationEncryptionKey,
   });
-  const wordpressEntityMappingRepository = createDbWordPressEntityMappingRepository(db);
 
   // --- Phase 05: customer/product modules + WooCommerce customer/product sync ---
-  const customersRepository = createDbCustomersRepository(db);
-  const customersService = new CustomersService({ customersRepository, auditService });
+  const customersService = new CustomersService({ customersRepository, auditService, listOrdersByCustomer });
   app.use("/api/admin/customers", createCustomersRouter({ customersService, accessSecret: jwt.accessSecret }));
 
-  const productsRepository = createDbProductsRepository(db);
   const productsService = new ProductsService({ productsRepository });
   app.use("/api/admin/products", createProductsRouter({ productsService, accessSecret: jwt.accessSecret }));
   app.use(
@@ -138,20 +178,20 @@ export function createApp(logger: Logger, options: CreateAppOptions): Express {
     createProductCategoriesRouter({ productsService, accessSecret: jwt.accessSecret }),
   );
 
-  const syncService = new WordPressSyncService({
-    connectionRepository: wordpressConnectionRepository,
-    syncJobRepository: wordpressSyncJobRepository,
-    syncLogRepository: wordpressSyncLogRepository,
-    entityMappingRepository: wordpressEntityMappingRepository,
-    customersRepository,
-    productsRepository,
-    wooCommerceClient: createFetchWooCommerceApiClient(),
-    encryptionKey: integrationEncryptionKey,
-  });
-
   app.use(
     "/api/admin/integrations/wordpress",
     createWordPressRouter({ wordpressService, syncService, accessSecret: jwt.accessSecret }),
+  );
+
+  // --- Phase 06: orders + customer purchase metrics ---
+  const ordersService = new OrdersService({ ordersRepository });
+  app.use(
+    "/api/admin/orders",
+    createOrdersRouter({
+      ordersService,
+      syncOrdersFromWordPress: (actorId) => syncService.syncOrders(actorId),
+      accessSecret: jwt.accessSecret,
+    }),
   );
 
   app.use(notFoundHandler);

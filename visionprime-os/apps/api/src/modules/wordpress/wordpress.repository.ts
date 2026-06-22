@@ -55,7 +55,15 @@ export interface WordPressSyncLogRepository {
 }
 
 export interface WordPressWebhookEventRepository {
-  insert(entry: Pick<WordPressWebhookEventRow, "event_type" | "status" | "detail" | "metadata">): Promise<WordPressWebhookEventRow>;
+  insert(
+    entry: Pick<WordPressWebhookEventRow, "event_type" | "status" | "detail" | "metadata"> & {
+      delivery_id?: string | null;
+    },
+  ): Promise<WordPressWebhookEventRow>;
+  /** Used to detect and ignore duplicate webhook deliveries. */
+  findByDeliveryId(deliveryId: string): Promise<WordPressWebhookEventRow | null>;
+  list(page: number, pageSize: number): Promise<ListResult<WordPressWebhookEventRow>>;
+  updateStatus(id: string, status: string, detail?: string | null): Promise<WordPressWebhookEventRow>;
 }
 
 export interface WordPressEntityMappingRepository {

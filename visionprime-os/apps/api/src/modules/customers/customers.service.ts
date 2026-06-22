@@ -2,12 +2,19 @@ import { HttpError, NotFoundError } from "../../common/http-error";
 import { AuditService } from "../audit/audit.service";
 import { toPaginationMeta } from "../audit/audit.service";
 import { CustomersRepository } from "./customers.repository";
-import { Customer360, PublicCustomer, toPublicCustomer } from "./customers.types";
+import { Customer360, Customer360OrderRow, PublicCustomer, toPublicCustomer } from "./customers.types";
 import { CreateCustomerDto, UpdateCustomerDto } from "./customers.dto";
 
 export interface CustomersServiceDeps {
   customersRepository: CustomersRepository;
   auditService: AuditService;
+  /**
+   * Injected rather than imported directly to avoid a circular dependency
+   * between the customers and orders modules — orders.service already
+   * depends on nothing here, but customers needs order history for the
+   * Customer 360 view.
+   */
+  listOrdersByCustomer?: (customerId: string) => Promise<Customer360OrderRow[]>;
 }
 
 export interface ActorContext {
@@ -175,13 +182,14 @@ export class CustomersService {
       throw new NotFoundError("Customer not found");
     }
 
-    const [notes, tags, identities, events] = await Promise.all([
+    const [notes, tags, identities, events, orders] = await Promise.all([
       this.deps.customersRepository.listNotes(id),
       this.deps.customersRepository.listTags(id),
       this.deps.customersRepository.listIdentities(id),
       this.deps.customersRepository.listEvents(id),
+      this.deps.listOrdersByCustomer ? this.deps.listOrdersByCustomer(id) : Promise.resolve([]),
     ]);
 
-    return { customer: toPublicCustomer(customer), notes, tags, identities, events };
+    return { customer: toPublicCustomer(customer), notes, tags, identities, events, orders };
   }
 }

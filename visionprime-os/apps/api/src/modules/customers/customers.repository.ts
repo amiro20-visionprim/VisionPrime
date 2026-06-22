@@ -2,6 +2,7 @@ import {
   CustomerEventRow,
   CustomerIdentityRow,
   CustomerNoteRow,
+  CustomerPurchaseMetricsDelta,
   CustomerRow,
   CustomerTagRow,
   ListCustomersParams,
@@ -46,4 +47,14 @@ export interface CustomersRepository {
    * loser (customer row + its notes/tags/identities/events) for audit.
    */
   merge(survivorCustomerId: string, mergedCustomerId: string, actorId: string): Promise<void>;
+
+  /**
+   * Applies a signed delta to purchase_count/total_spent/lifetime_value,
+   * recomputes average_order_value from the new totals, and sets
+   * last_purchase_at when provided. Used by order sync/webhooks on
+   * completed/processing orders (positive delta) and to undo that effect
+   * on a later cancellation/refund (negative delta) — never overwrites
+   * absolute values, so repeated/out-of-order calls stay consistent.
+   */
+  applyPurchaseMetricsDelta(customerId: string, delta: CustomerPurchaseMetricsDelta): Promise<CustomerRow>;
 }

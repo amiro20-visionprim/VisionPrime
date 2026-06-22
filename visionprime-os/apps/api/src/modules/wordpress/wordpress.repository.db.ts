@@ -174,10 +174,38 @@ export function createDbWordPressWebhookEventRepository(db: Db): WordPressWebhoo
   return {
     async insert(entry): Promise<WordPressWebhookEventRow> {
       const result = await db.query<WordPressWebhookEventRow>(
-        `insert into wordpress_webhook_events (event_type, status, detail, metadata)
-         values ($1, $2, $3, $4)
+        `insert into wordpress_webhook_events (event_type, status, detail, metadata, delivery_id)
+         values ($1, $2, $3, $4, $5)
          returning *`,
-        [entry.event_type, entry.status, entry.detail, JSON.stringify(entry.metadata)],
+        [entry.event_type, entry.status, entry.detail, JSON.stringify(entry.metadata), entry.delivery_id ?? null],
+      );
+      return result.rows[0];
+    },
+
+    async findByDeliveryId(deliveryId: string): Promise<WordPressWebhookEventRow | null> {
+      const result = await db.query<WordPressWebhookEventRow>(
+        `select * from wordpress_webhook_events where delivery_id = $1`,
+        [deliveryId],
+      );
+      return result.rows[0] ?? null;
+    },
+
+    async list(page: number, pageSize: number): Promise<ListResult<WordPressWebhookEventRow>> {
+      const offset = (page - 1) * pageSize;
+      const [rowsResult, countResult] = await Promise.all([
+        db.query<WordPressWebhookEventRow>(
+          `select * from wordpress_webhook_events order by created_at desc limit $1 offset $2`,
+          [pageSize, offset],
+        ),
+        db.query<{ count: string }>(`select count(*) from wordpress_webhook_events`),
+      ]);
+      return { rows: rowsResult.rows, totalItems: Number(countResult.rows[0].count) };
+    },
+
+    async updateStatus(id: string, status: string, detail?: string | null): Promise<WordPressWebhookEventRow> {
+      const result = await db.query<WordPressWebhookEventRow>(
+        `update wordpress_webhook_events set status = $2, detail = coalesce($3, detail) where id = $1 returning *`,
+        [id, status, detail ?? null],
       );
       return result.rows[0];
     },

@@ -16,7 +16,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Customers", href: "/customers", permission: "customer:view" },
   { label: "Products", href: "/products", permission: "product:view" },
-  { label: "Orders", href: "/orders" },
+  { label: "Orders", href: "/orders", permission: "order:view" },
   { label: "Wallet", href: "/wallet" },
   { label: "Loyalty", href: "/loyalty" },
   { label: "Rewards", href: "/rewards" },
