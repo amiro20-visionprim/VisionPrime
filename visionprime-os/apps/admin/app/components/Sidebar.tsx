@@ -14,7 +14,8 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard" },
-  { label: "Customers", href: "/customers" },
+  { label: "Customers", href: "/customers", permission: "customer:view" },
+  { label: "Products", href: "/products", permission: "product:view" },
   { label: "Orders", href: "/orders" },
   { label: "Wallet", href: "/wallet" },
   { label: "Loyalty", href: "/loyalty" },

@@ -68,6 +68,23 @@ export interface WordPressWebhookEventRow {
   created_at: string;
 }
 
+export interface WordPressEntityMappingRow {
+  id: string;
+  entity_type: string;
+  local_id: string;
+  remote_id: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SyncCounts {
+  created: number;
+  updated: number;
+  failed: number;
+  total: number;
+}
+
 export function toPublicConnection(row: WordPressConnectionRow): PublicWordPressConnection {
   return {
     id: row.id,

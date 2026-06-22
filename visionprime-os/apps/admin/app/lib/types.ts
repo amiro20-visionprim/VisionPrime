@@ -119,3 +119,82 @@ export interface WordPressSyncLogRow {
   message: string;
   created_at: string;
 }
+
+export interface WordPressSyncJobRowWithMetadata extends WordPressSyncJobRow {
+  metadata?: { created: number; updated: number; failed: number; total: number } | null;
+}
+
+export interface Customer {
+  id: string;
+  full_name: string;
+  primary_email: string | null;
+  primary_mobile: string | null;
+  wordpress_user_id: string | null;
+  woocommerce_customer_id: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface CustomerNote {
+  id: string;
+  customer_id: string;
+  author_id: string | null;
+  note: string;
+  created_at: string;
+}
+
+export interface CustomerTag {
+  id: string;
+  customer_id: string;
+  tag: string;
+  created_at: string;
+}
+
+export interface CustomerIdentity {
+  id: string;
+  customer_id: string;
+  identity_type: string;
+  identity_value: string;
+  created_at: string;
+}
+
+export interface CustomerEvent {
+  id: string;
+  customer_id: string;
+  event_type: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface Customer360 {
+  customer: Customer;
+  notes: CustomerNote[];
+  tags: CustomerTag[];
+  identities: CustomerIdentity[];
+  events: CustomerEvent[];
+}
+
+export interface Product {
+  id: string;
+  woocommerce_product_id: string;
+  sku: string | null;
+  name: string;
+  status: string;
+  price: string | null;
+  category_woocommerce_ids: string[];
+  raw: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductCategory {
+  id: string;
+  name: string;
+  slug: string;
+  woocommerce_category_id: string;
+  parent_woocommerce_category_id: string | null;
+  created_at: string;
+  updated_at: string;
+}

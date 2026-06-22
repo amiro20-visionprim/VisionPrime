@@ -19,7 +19,12 @@ import {
 import { apiClient } from "../../lib/api-client";
 import { useAuth } from "../../lib/auth-client";
 import { friendlyErrorMessage } from "../../lib/error-message";
-import { PaginationMeta, WordPressConnection, WordPressSyncJobRow, WordPressSyncLogRow } from "../../lib/types";
+import {
+  PaginationMeta,
+  WordPressConnection,
+  WordPressSyncJobRowWithMetadata,
+  WordPressSyncLogRow,
+} from "../../lib/types";
 
 type TabKey =
   | "connection"
@@ -51,6 +56,8 @@ export default function WordPressSyncPage() {
   const canUpdate = isSuperAdmin || permissions.includes("wordpress:update");
   const canTest = isSuperAdmin || permissions.includes("wordpress:test");
   const canRegisterWebhook = isSuperAdmin || permissions.includes("wordpress:webhook_register");
+  const canSyncCustomers = isSuperAdmin || permissions.includes("wordpress:sync_customer");
+  const canSyncProducts = isSuperAdmin || permissions.includes("wordpress:sync_product");
   const { showToast } = useToast();
 
   const [activeTab, setActiveTab] = useState<TabKey>("connection");
@@ -63,6 +70,9 @@ export default function WordPressSyncPage() {
   const [isTesting, setIsTesting] = useState(false);
   const [isRegisteringWebhook, setIsRegisteringWebhook] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [isSyncingCustomers, setIsSyncingCustomers] = useState(false);
+  const [isSyncingProducts, setIsSyncingProducts] = useState(false);
+  const [syncJobsReloadKey, setSyncJobsReloadKey] = useState(0);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -149,6 +159,42 @@ export default function WordPressSyncPage() {
     }
   }
 
+  async function handleSyncCustomers() {
+    setIsSyncingCustomers(true);
+    try {
+      const result = await apiClient.post<{ counts: { created: number; updated: number; failed: number; total: number } }>(
+        "/api/admin/integrations/wordpress/sync/customers",
+      );
+      showToast(
+        `Customer sync finished: ${result.counts.created} created, ${result.counts.updated} updated, ${result.counts.failed} failed.`,
+        result.counts.failed > 0 ? "error" : "success",
+      );
+      setSyncJobsReloadKey((k) => k + 1);
+    } catch (err) {
+      showToast(friendlyErrorMessage(err), "error");
+    } finally {
+      setIsSyncingCustomers(false);
+    }
+  }
+
+  async function handleSyncProducts() {
+    setIsSyncingProducts(true);
+    try {
+      const result = await apiClient.post<{ counts: { created: number; updated: number; failed: number; total: number } }>(
+        "/api/admin/integrations/wordpress/sync/products",
+      );
+      showToast(
+        `Product sync finished: ${result.counts.created} created, ${result.counts.updated} updated, ${result.counts.failed} failed.`,
+        result.counts.failed > 0 ? "error" : "success",
+      );
+      setSyncJobsReloadKey((k) => k + 1);
+    } catch (err) {
+      showToast(friendlyErrorMessage(err), "error");
+    } finally {
+      setIsSyncingProducts(false);
+    }
+  }
+
   return (
     <div>
       <PageHeader title="WordPress Sync" description="Manage the WooCommerce/WordPress connection." />
@@ -195,13 +241,24 @@ export default function WordPressSyncPage() {
               ) : null}
 
               {activeTab === "manual-sync" ? (
-                <EmptyState
-                  title="Manual sync is not available yet."
-                  description="Manual sync runs ship in a later phase (Phase 05/06)."
-                />
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  {canSyncCustomers ? (
+                    <Button onClick={handleSyncCustomers} isLoading={isSyncingCustomers}>
+                      Sync Customers
+                    </Button>
+                  ) : null}
+                  {canSyncProducts ? (
+                    <Button onClick={handleSyncProducts} isLoading={isSyncingProducts}>
+                      Sync Products
+                    </Button>
+                  ) : null}
+                  {!canSyncCustomers && !canSyncProducts ? (
+                    <p>You don't have permission to run a manual sync.</p>
+                  ) : null}
+                </div>
               ) : null}
 
-              {activeTab === "sync-jobs" ? <SyncJobsTab /> : null}
+              {activeTab === "sync-jobs" ? <SyncJobsTab reloadKey={syncJobsReloadKey} /> : null}
               {activeTab === "sync-logs" ? <SyncLogsTab /> : null}
 
               {activeTab === "webhooks" ? (
@@ -424,8 +481,8 @@ function WebhooksTab({
   );
 }
 
-function SyncJobsTab() {
-  const [rows, setRows] = useState<WordPressSyncJobRow[]>([]);
+function SyncJobsTab({ reloadKey }: { reloadKey: number }) {
+  const [rows, setRows] = useState<WordPressSyncJobRowWithMetadata[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>({ page: 1, pageSize: PAGE_SIZE, totalItems: 0, totalPages: 1 });
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -435,7 +492,7 @@ function SyncJobsTab() {
     setIsLoading(true);
     setError(undefined);
     try {
-      const result = await apiClient.getWithMeta<WordPressSyncJobRow[]>(
+      const result = await apiClient.getWithMeta<WordPressSyncJobRowWithMetadata[]>(
         `/api/admin/integrations/wordpress/sync/jobs?page=${targetPage}&pageSize=${PAGE_SIZE}`,
       );
       setRows(result.data);
@@ -449,18 +506,26 @@ function SyncJobsTab() {
 
   useEffect(() => {
     load(page);
-  }, [page, load]);
+  }, [page, load, reloadKey]);
 
-  const columns: DataTableColumn<WordPressSyncJobRow>[] = [
+  const columns: DataTableColumn<WordPressSyncJobRowWithMetadata>[] = [
     { key: "created_at", header: "Created", render: (row) => new Date(row.created_at).toLocaleString() },
     { key: "job_type", header: "Job Type" },
     { key: "status", header: "Status", render: (row) => <StatusBadge status={row.status} /> },
     { key: "started_at", header: "Started", render: (row) => (row.started_at ? new Date(row.started_at).toLocaleString() : "—") },
     { key: "finished_at", header: "Finished", render: (row) => (row.finished_at ? new Date(row.finished_at).toLocaleString() : "—") },
+    {
+      key: "counts",
+      header: "Counts",
+      render: (row) =>
+        row.metadata
+          ? `${row.metadata.created} created, ${row.metadata.updated} updated, ${row.metadata.failed} failed`
+          : "—",
+    },
   ];
 
   return (
-    <DataTable<WordPressSyncJobRow>
+    <DataTable<WordPressSyncJobRowWithMetadata>
       columns={columns}
       rows={rows}
       isLoading={isLoading}

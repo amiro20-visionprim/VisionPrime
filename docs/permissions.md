@@ -47,6 +47,16 @@
 | `wordpress:webhook_register` | `POST /api/admin/integrations/wordpress/webhooks/register` |
 | `wordpress:sync_job:view` | `GET /api/admin/integrations/wordpress/sync/jobs` |
 | `wordpress:sync_log:view` | `GET /api/admin/integrations/wordpress/sync/logs` |
+| `customer:view` | `GET /api/admin/customers`, `GET /api/admin/customers/:id`, `GET /api/admin/customers/:id/360` |
+| `customer:create` | `POST /api/admin/customers` |
+| `customer:update` | `PATCH /api/admin/customers/:id` |
+| `customer:delete` | `DELETE /api/admin/customers/:id` |
+| `customer:merge` | `POST /api/admin/customers/merge` |
+| `customer:note:create` | `POST /api/admin/customers/:id/notes` |
+| `customer:tag:update` | `POST /api/admin/customers/:id/tags` |
+| `product:view` | `GET /api/admin/products`, `GET /api/admin/products/:id`, `GET /api/admin/product-categories` |
+| `wordpress:sync_customer` | `POST /api/admin/integrations/wordpress/sync/customers`, part of `/sync/incremental` |
+| `wordpress:sync_product` | `POST /api/admin/integrations/wordpress/sync/products`, part of `/sync/incremental` |
 
 Permissions are **system-defined**: they are seeded once via the
 `0001_auth_rbac_settings_audit.sql` migration and are immutable through

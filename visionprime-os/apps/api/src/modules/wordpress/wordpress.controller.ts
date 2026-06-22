@@ -6,9 +6,11 @@ import { createRequireAuth, requirePermission } from "../../common/auth/auth-mid
 import { HttpError } from "../../common/http-error";
 import { connectSchema, updateSettingsSchema } from "./wordpress.dto";
 import { WordPressService } from "./wordpress.service";
+import { WordPressSyncService } from "./wordpress-sync.service";
 
 export interface WordPressControllerDeps {
   wordpressService: WordPressService;
+  syncService: WordPressSyncService;
   accessSecret: string;
 }
 
@@ -71,6 +73,30 @@ export function createWordPressRouter(deps: WordPressControllerDeps): Router {
     const { rows, meta } = await deps.wordpressService.listSyncLogs(req.query.page, req.query.pageSize);
     sendSuccess(res, rows, { ...meta });
   }));
+
+  router.post("/sync/customers", requireAuth, requirePermission("wordpress:sync_customer"), asyncHandler(async (req, res) => {
+    const auth = requireAuthContext(req);
+    const result = await deps.syncService.syncCustomers(auth.userId);
+    sendSuccess(res, result);
+  }));
+
+  router.post("/sync/products", requireAuth, requirePermission("wordpress:sync_product"), asyncHandler(async (req, res) => {
+    const auth = requireAuthContext(req);
+    const result = await deps.syncService.syncProducts(auth.userId);
+    sendSuccess(res, result);
+  }));
+
+  router.post(
+    "/sync/incremental",
+    requireAuth,
+    requirePermission("wordpress:sync_customer"),
+    requirePermission("wordpress:sync_product"),
+    asyncHandler(async (req, res) => {
+      const auth = requireAuthContext(req);
+      const result = await deps.syncService.syncIncremental(auth.userId);
+      sendSuccess(res, result);
+    }),
+  );
 
   return router;
 }

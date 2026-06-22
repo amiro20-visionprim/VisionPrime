@@ -5,11 +5,18 @@ import {
   ConnectionWebhookFields,
   ListResult,
   WordPressConnectionRepository,
+  WordPressEntityMappingRepository,
   WordPressSyncJobRepository,
   WordPressSyncLogRepository,
   WordPressWebhookEventRepository,
 } from "./wordpress.repository";
-import { WordPressConnectionRow, WordPressSyncJobRow, WordPressSyncLogRow, WordPressWebhookEventRow } from "./wordpress.types";
+import {
+  WordPressConnectionRow,
+  WordPressEntityMappingRow,
+  WordPressSyncJobRow,
+  WordPressSyncLogRow,
+  WordPressWebhookEventRow,
+} from "./wordpress.types";
 
 /**
  * `wordpress_connections` is a singleton table (always exactly one row,
@@ -80,6 +87,28 @@ export function createDbWordPressSyncJobRepository(db: Db): WordPressSyncJobRepo
       ]);
       return { rows: rowsResult.rows, totalItems: Number(countResult.rows[0].count) };
     },
+
+    async create(jobType: string): Promise<WordPressSyncJobRow> {
+      const result = await db.query<WordPressSyncJobRow>(
+        `insert into wordpress_sync_jobs (job_type, status, started_at) values ($1, 'running', now()) returning *`,
+        [jobType],
+      );
+      return result.rows[0];
+    },
+
+    async updateStatus(id, fields): Promise<WordPressSyncJobRow> {
+      const result = await db.query<WordPressSyncJobRow>(
+        `update wordpress_sync_jobs set
+           status = $2,
+           finished_at = coalesce($3, finished_at),
+           metadata = coalesce($4, metadata),
+           updated_at = now()
+         where id = $1
+         returning *`,
+        [id, fields.status, fields.finishedAt ?? null, fields.metadata ? JSON.stringify(fields.metadata) : null],
+      );
+      return result.rows[0];
+    },
   };
 }
 
@@ -95,6 +124,48 @@ export function createDbWordPressSyncLogRepository(db: Db): WordPressSyncLogRepo
         db.query<{ count: string }>(`select count(*) from wordpress_sync_logs`),
       ]);
       return { rows: rowsResult.rows, totalItems: Number(countResult.rows[0].count) };
+    },
+
+    async insert(entry): Promise<WordPressSyncLogRow> {
+      const result = await db.query<WordPressSyncLogRow>(
+        `insert into wordpress_sync_logs (sync_job_id, level, message, metadata) values ($1, $2, $3, $4) returning *`,
+        [entry.sync_job_id, entry.level, entry.message, JSON.stringify(entry.metadata ?? {})],
+      );
+      return result.rows[0];
+    },
+  };
+}
+
+export function createDbWordPressEntityMappingRepository(db: Db): WordPressEntityMappingRepository {
+  return {
+    async findByRemoteId(entityType, remoteId): Promise<WordPressEntityMappingRow | null> {
+      const result = await db.query<WordPressEntityMappingRow>(
+        `select * from wordpress_entity_mappings where entity_type = $1 and remote_id = $2`,
+        [entityType, remoteId],
+      );
+      return result.rows[0] ?? null;
+    },
+
+    async findByLocalId(entityType, localId): Promise<WordPressEntityMappingRow | null> {
+      const result = await db.query<WordPressEntityMappingRow>(
+        `select * from wordpress_entity_mappings where entity_type = $1 and local_id = $2`,
+        [entityType, localId],
+      );
+      return result.rows[0] ?? null;
+    },
+
+    async upsert(entityType, localId, remoteId, metadata = {}): Promise<WordPressEntityMappingRow> {
+      const result = await db.query<WordPressEntityMappingRow>(
+        `insert into wordpress_entity_mappings (entity_type, local_id, remote_id, metadata)
+         values ($1, $2, $3, $4)
+         on conflict (entity_type, remote_id) do update set
+           local_id = excluded.local_id,
+           metadata = excluded.metadata,
+           updated_at = now()
+         returning *`,
+        [entityType, localId, remoteId, JSON.stringify(metadata)],
+      );
+      return result.rows[0];
     },
   };
 }

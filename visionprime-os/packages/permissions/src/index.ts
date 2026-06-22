@@ -29,6 +29,18 @@ export const SYSTEM_PERMISSIONS = [
   "wordpress:webhook_register",
   "wordpress:sync_job:view",
   "wordpress:sync_log:view",
+
+  // --- Phase 05: customer/product modules + WooCommerce customer/product sync ---
+  "customer:view",
+  "customer:create",
+  "customer:update",
+  "customer:delete",
+  "customer:merge",
+  "customer:note:create",
+  "customer:tag:update",
+  "product:view",
+  "wordpress:sync_customer",
+  "wordpress:sync_product",
 ] as const;
 
 export type Permission = (typeof SYSTEM_PERMISSIONS)[number];

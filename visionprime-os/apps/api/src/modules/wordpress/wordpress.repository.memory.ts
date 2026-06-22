@@ -5,11 +5,18 @@ import {
   ConnectionWebhookFields,
   ListResult,
   WordPressConnectionRepository,
+  WordPressEntityMappingRepository,
   WordPressSyncJobRepository,
   WordPressSyncLogRepository,
   WordPressWebhookEventRepository,
 } from "./wordpress.repository";
-import { WordPressConnectionRow, WordPressSyncJobRow, WordPressSyncLogRow, WordPressWebhookEventRow } from "./wordpress.types";
+import {
+  WordPressConnectionRow,
+  WordPressEntityMappingRow,
+  WordPressSyncJobRow,
+  WordPressSyncLogRow,
+  WordPressWebhookEventRow,
+} from "./wordpress.types";
 
 export function createMemoryWordPressConnectionRepository(
   seed?: Partial<WordPressConnectionRow>,
@@ -69,6 +76,34 @@ export function createMemoryWordPressSyncJobRepository(seed: WordPressSyncJobRow
       const start = (page - 1) * pageSize;
       return { rows: sorted.slice(start, start + pageSize), totalItems: rows.length };
     },
+
+    async create(jobType: string): Promise<WordPressSyncJobRow> {
+      const now = new Date().toISOString();
+      const row: WordPressSyncJobRow = {
+        id: randomUUID(),
+        job_type: jobType,
+        status: "running",
+        started_at: now,
+        finished_at: null,
+        metadata: {},
+        created_at: now,
+        updated_at: now,
+      };
+      rows.push(row);
+      return row;
+    },
+
+    async updateStatus(id, fields): Promise<WordPressSyncJobRow> {
+      const row = rows.find((r) => r.id === id);
+      if (!row) {
+        throw new Error("Sync job not found");
+      }
+      row.status = fields.status;
+      if (fields.finishedAt !== undefined) row.finished_at = fields.finishedAt;
+      if (fields.metadata !== undefined) row.metadata = fields.metadata;
+      row.updated_at = new Date().toISOString();
+      return row;
+    },
   };
 }
 
@@ -79,6 +114,54 @@ export function createMemoryWordPressSyncLogRepository(seed: WordPressSyncLogRow
       const sorted = [...rows].sort((a, b) => b.created_at.localeCompare(a.created_at));
       const start = (page - 1) * pageSize;
       return { rows: sorted.slice(start, start + pageSize), totalItems: rows.length };
+    },
+
+    async insert(entry): Promise<WordPressSyncLogRow> {
+      const row: WordPressSyncLogRow = {
+        id: randomUUID(),
+        sync_job_id: entry.sync_job_id,
+        level: entry.level,
+        message: entry.message,
+        metadata: entry.metadata ?? {},
+        created_at: new Date().toISOString(),
+      };
+      rows.push(row);
+      return row;
+    },
+  };
+}
+
+export function createMemoryWordPressEntityMappingRepository(): WordPressEntityMappingRepository {
+  const rows: WordPressEntityMappingRow[] = [];
+  return {
+    async findByRemoteId(entityType, remoteId): Promise<WordPressEntityMappingRow | null> {
+      return rows.find((r) => r.entity_type === entityType && r.remote_id === remoteId) ?? null;
+    },
+
+    async findByLocalId(entityType, localId): Promise<WordPressEntityMappingRow | null> {
+      return rows.find((r) => r.entity_type === entityType && r.local_id === localId) ?? null;
+    },
+
+    async upsert(entityType, localId, remoteId, metadata = {}): Promise<WordPressEntityMappingRow> {
+      const existing = rows.find((r) => r.entity_type === entityType && r.remote_id === remoteId);
+      const now = new Date().toISOString();
+      if (existing) {
+        existing.local_id = localId;
+        existing.metadata = metadata;
+        existing.updated_at = now;
+        return existing;
+      }
+      const row: WordPressEntityMappingRow = {
+        id: randomUUID(),
+        entity_type: entityType,
+        local_id: localId,
+        remote_id: remoteId,
+        metadata,
+        created_at: now,
+        updated_at: now,
+      };
+      rows.push(row);
+      return row;
     },
   };
 }

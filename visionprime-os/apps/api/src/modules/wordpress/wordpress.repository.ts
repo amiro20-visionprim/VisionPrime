@@ -1,4 +1,10 @@
-import { WordPressConnectionRow, WordPressSyncJobRow, WordPressSyncLogRow, WordPressWebhookEventRow } from "./wordpress.types";
+import {
+  WordPressConnectionRow,
+  WordPressEntityMappingRow,
+  WordPressSyncJobRow,
+  WordPressSyncLogRow,
+  WordPressWebhookEventRow,
+} from "./wordpress.types";
 
 export interface ConnectionUpdateFields {
   site_url?: string | null;
@@ -36,12 +42,25 @@ export interface ListResult<T> {
 
 export interface WordPressSyncJobRepository {
   list(page: number, pageSize: number): Promise<ListResult<WordPressSyncJobRow>>;
+  create(jobType: string): Promise<WordPressSyncJobRow>;
+  updateStatus(
+    id: string,
+    fields: { status: WordPressSyncJobRow["status"]; finishedAt?: string | null; metadata?: Record<string, unknown> },
+  ): Promise<WordPressSyncJobRow>;
 }
 
 export interface WordPressSyncLogRepository {
   list(page: number, pageSize: number): Promise<ListResult<WordPressSyncLogRow>>;
+  insert(entry: { sync_job_id: string | null; level: WordPressSyncLogRow["level"]; message: string; metadata?: Record<string, unknown> }): Promise<WordPressSyncLogRow>;
 }
 
 export interface WordPressWebhookEventRepository {
   insert(entry: Pick<WordPressWebhookEventRow, "event_type" | "status" | "detail" | "metadata">): Promise<WordPressWebhookEventRow>;
+}
+
+export interface WordPressEntityMappingRepository {
+  findByRemoteId(entityType: string, remoteId: string): Promise<WordPressEntityMappingRow | null>;
+  findByLocalId(entityType: string, localId: string): Promise<WordPressEntityMappingRow | null>;
+  /** Idempotent insert-or-update keyed on (entity_type, remote_id). */
+  upsert(entityType: string, localId: string, remoteId: string, metadata?: Record<string, unknown>): Promise<WordPressEntityMappingRow>;
 }

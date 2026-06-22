@@ -32,3 +32,40 @@ export function buildRoleRow(overrides: Partial<RoleRow> = {}): RoleRow {
     ...overrides,
   };
 }
+
+import { CustomerRow } from "../modules/customers/customers.types";
+import { ProductRow } from "../modules/products/products.types";
+
+export function buildCustomerRow(overrides: Partial<CustomerRow> = {}): CustomerRow {
+  const now = new Date().toISOString();
+  return {
+    id: randomUUID(),
+    full_name: "Test Customer",
+    primary_email: "customer@example.com",
+    primary_mobile: "+10000000000",
+    wordpress_user_id: null,
+    woocommerce_customer_id: null,
+    status: "active",
+    created_at: now,
+    updated_at: now,
+    deleted_at: null,
+    ...overrides,
+  };
+}
+
+export function buildProductRow(overrides: Partial<ProductRow> = {}): ProductRow {
+  const now = new Date().toISOString();
+  return {
+    id: randomUUID(),
+    woocommerce_product_id: "1001",
+    sku: "SKU-1001",
+    name: "Test Product",
+    status: "active",
+    price: "9.99",
+    category_woocommerce_ids: [],
+    raw: {},
+    created_at: now,
+    updated_at: now,
+    ...overrides,
+  };
+}

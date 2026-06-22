@@ -33,12 +33,23 @@ import { createAuthRouter } from "./modules/auth/auth.controller";
 
 import {
   createDbWordPressConnectionRepository,
+  createDbWordPressEntityMappingRepository,
   createDbWordPressSyncJobRepository,
   createDbWordPressSyncLogRepository,
   createDbWordPressWebhookEventRepository,
 } from "./modules/wordpress/wordpress.repository.db";
 import { WordPressService } from "./modules/wordpress/wordpress.service";
+import { WordPressSyncService } from "./modules/wordpress/wordpress-sync.service";
+import { createFetchWooCommerceApiClient } from "./modules/wordpress/wordpress-sync.types";
 import { createWordPressRouter } from "./modules/wordpress/wordpress.controller";
+
+import { createDbCustomersRepository } from "./modules/customers/customers.repository.db";
+import { CustomersService } from "./modules/customers/customers.service";
+import { createCustomersRouter } from "./modules/customers/customers.controller";
+
+import { createDbProductsRepository } from "./modules/products/products.repository.db";
+import { ProductsService } from "./modules/products/products.service";
+import { createProductCategoriesRouter, createProductsRouter } from "./modules/products/products.controller";
 
 export interface CreateAppOptions {
   db: Db;
@@ -112,9 +123,35 @@ export function createApp(logger: Logger, options: CreateAppOptions): Express {
     auditService,
     encryptionKey: integrationEncryptionKey,
   });
+  const wordpressEntityMappingRepository = createDbWordPressEntityMappingRepository(db);
+
+  // --- Phase 05: customer/product modules + WooCommerce customer/product sync ---
+  const customersRepository = createDbCustomersRepository(db);
+  const customersService = new CustomersService({ customersRepository, auditService });
+  app.use("/api/admin/customers", createCustomersRouter({ customersService, accessSecret: jwt.accessSecret }));
+
+  const productsRepository = createDbProductsRepository(db);
+  const productsService = new ProductsService({ productsRepository });
+  app.use("/api/admin/products", createProductsRouter({ productsService, accessSecret: jwt.accessSecret }));
+  app.use(
+    "/api/admin/product-categories",
+    createProductCategoriesRouter({ productsService, accessSecret: jwt.accessSecret }),
+  );
+
+  const syncService = new WordPressSyncService({
+    connectionRepository: wordpressConnectionRepository,
+    syncJobRepository: wordpressSyncJobRepository,
+    syncLogRepository: wordpressSyncLogRepository,
+    entityMappingRepository: wordpressEntityMappingRepository,
+    customersRepository,
+    productsRepository,
+    wooCommerceClient: createFetchWooCommerceApiClient(),
+    encryptionKey: integrationEncryptionKey,
+  });
+
   app.use(
     "/api/admin/integrations/wordpress",
-    createWordPressRouter({ wordpressService, accessSecret: jwt.accessSecret }),
+    createWordPressRouter({ wordpressService, syncService, accessSecret: jwt.accessSecret }),
   );
 
   app.use(notFoundHandler);

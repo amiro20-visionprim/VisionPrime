@@ -7,6 +7,7 @@ import { createMemoryAuditLogRepository, createMemoryActivityLogRepository, crea
 import { AuditService } from "../modules/audit/audit.service";
 import { createAuditRouter } from "../modules/audit/audit.controller";
 
+import { encryptSecret } from "../common/crypto";
 import { createMemoryUsersRepository } from "../modules/users/users.repository.memory";
 import { UsersService } from "../modules/users/users.service";
 import { createUsersRouter } from "../modules/users/users.controller";
@@ -25,15 +26,38 @@ import { createAuthRouter } from "../modules/auth/auth.controller";
 
 import {
   createMemoryWordPressConnectionRepository,
+  createMemoryWordPressEntityMappingRepository,
   createMemoryWordPressSyncJobRepository,
   createMemoryWordPressSyncLogRepository,
   createMemoryWordPressWebhookEventRepository,
 } from "../modules/wordpress/wordpress.repository.memory";
 import { WordPressService } from "../modules/wordpress/wordpress.service";
+import { WordPressSyncService } from "../modules/wordpress/wordpress-sync.service";
+import { WooCommerceApiClient } from "../modules/wordpress/wordpress-sync.types";
 import { createWordPressRouter } from "../modules/wordpress/wordpress.controller";
+
+import { createMemoryCustomersRepository } from "../modules/customers/customers.repository.memory";
+import { CustomersService } from "../modules/customers/customers.service";
+import { createCustomersRouter } from "../modules/customers/customers.controller";
+
+import { createMemoryProductsRepository } from "../modules/products/products.repository.memory";
+import { ProductsService } from "../modules/products/products.service";
+import { createProductCategoriesRouter, createProductsRouter } from "../modules/products/products.controller";
 
 import { UserRow } from "../modules/users/users.types";
 import { RoleRow } from "../modules/roles/roles.types";
+import { CustomerRow } from "../modules/customers/customers.types";
+import { ProductRow } from "../modules/products/products.types";
+
+/** Default fake WooCommerce client for tests — returns empty data unless overridden. */
+export function createFakeWooCommerceApiClient(overrides?: Partial<WooCommerceApiClient>): WooCommerceApiClient {
+  return {
+    fetchCustomers: async () => [],
+    fetchProducts: async () => [],
+    fetchCategories: async () => [],
+    ...overrides,
+  };
+}
 
 export const TEST_INTEGRATION_ENCRYPTION_KEY = "test-integration-encryption-key-32chars";
 
@@ -53,9 +77,20 @@ export interface TestAppHarness {
   usersService: UsersService;
   rolesService: RolesService;
   wordpressService: WordPressService;
+  syncService: WordPressSyncService;
+  customersRepository: ReturnType<typeof createMemoryCustomersRepository>;
+  productsRepository: ReturnType<typeof createMemoryProductsRepository>;
+  customersService: CustomersService;
+  productsService: ProductsService;
 }
 
-export function buildTestApp(options?: { users?: UserRow[]; roles?: RoleRow[] }): TestAppHarness {
+export function buildTestApp(options?: {
+  users?: UserRow[];
+  roles?: RoleRow[];
+  customers?: CustomerRow[];
+  products?: ProductRow[];
+  wooCommerceClient?: WooCommerceApiClient;
+}): TestAppHarness {
   const app = express();
   app.use(express.json());
   app.use(requestContextMiddleware);
@@ -81,7 +116,15 @@ export function buildTestApp(options?: { users?: UserRow[]; roles?: RoleRow[] })
   const rolesService = new RolesService({ rolesRepository, usersRepository, auditService });
   const businessSettingsService = new BusinessSettingsService({ repository: businessSettingsRepository, auditService });
 
-  const wordpressConnectionRepository = createMemoryWordPressConnectionRepository();
+  const wordpressConnectionRepository = createMemoryWordPressConnectionRepository(
+    options?.wooCommerceClient
+      ? {
+          site_url: "https://example.test",
+          consumer_key_encrypted: encryptSecret("test-key", TEST_INTEGRATION_ENCRYPTION_KEY),
+          consumer_secret_encrypted: encryptSecret("test-secret", TEST_INTEGRATION_ENCRYPTION_KEY),
+        }
+      : undefined,
+  );
   const wordpressSyncJobRepository = createMemoryWordPressSyncJobRepository();
   const wordpressSyncLogRepository = createMemoryWordPressSyncLogRepository();
   const wordpressWebhookEventRepository = createMemoryWordPressWebhookEventRepository();
@@ -102,13 +145,58 @@ export function buildTestApp(options?: { users?: UserRow[]; roles?: RoleRow[] })
     createBusinessSettingsRouter({ businessSettingsService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
   );
   app.use("/api/admin", createAuditRouter({ auditService, accessSecret: TEST_JWT_CONFIG.accessSecret }));
+
+  const wordpressEntityMappingRepository = createMemoryWordPressEntityMappingRepository();
+  const customersRepository = createMemoryCustomersRepository(options?.customers ?? []);
+  const customersService = new CustomersService({ customersRepository, auditService });
+  app.use(
+    "/api/admin/customers",
+    createCustomersRouter({ customersService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
+  );
+
+  const productsRepository = createMemoryProductsRepository(options?.products ?? []);
+  const productsService = new ProductsService({ productsRepository });
+  app.use(
+    "/api/admin/products",
+    createProductsRouter({ productsService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
+  );
+  app.use(
+    "/api/admin/product-categories",
+    createProductCategoriesRouter({ productsService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
+  );
+
+  const syncService = new WordPressSyncService({
+    connectionRepository: wordpressConnectionRepository,
+    syncJobRepository: wordpressSyncJobRepository,
+    syncLogRepository: wordpressSyncLogRepository,
+    entityMappingRepository: wordpressEntityMappingRepository,
+    customersRepository,
+    productsRepository,
+    wooCommerceClient: options?.wooCommerceClient ?? createFakeWooCommerceApiClient(),
+    encryptionKey: TEST_INTEGRATION_ENCRYPTION_KEY,
+  });
+
   app.use(
     "/api/admin/integrations/wordpress",
-    createWordPressRouter({ wordpressService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
+    createWordPressRouter({ wordpressService, syncService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
   );
 
   app.use(notFoundHandler);
   app.use(createErrorFilter(createLogger("test", "error")));
 
-  return { app, usersRepository, rolesRepository, auditService, authService, usersService, rolesService, wordpressService };
+  return {
+    app,
+    usersRepository,
+    rolesRepository,
+    auditService,
+    authService,
+    usersService,
+    rolesService,
+    wordpressService,
+    syncService,
+    customersRepository,
+    productsRepository,
+    customersService,
+    productsService,
+  };
 }
