@@ -40,6 +40,13 @@
 | `settings:manage` | `PATCH /api/admin/settings/business`, `/features`, `/appearance` |
 | `audit:view` | `GET /api/admin/audit-logs`, `GET /api/admin/activity-logs` |
 | `security_event:view` | `GET /api/admin/security-events` |
+| `wordpress:view` | `GET /api/admin/integrations/wordpress/status` |
+| `wordpress:connect` | `POST /api/admin/integrations/wordpress/connect` |
+| `wordpress:update` | `PATCH /api/admin/integrations/wordpress/settings` |
+| `wordpress:test` | `POST /api/admin/integrations/wordpress/test-connection` |
+| `wordpress:webhook_register` | `POST /api/admin/integrations/wordpress/webhooks/register` |
+| `wordpress:sync_job:view` | `GET /api/admin/integrations/wordpress/sync/jobs` |
+| `wordpress:sync_log:view` | `GET /api/admin/integrations/wordpress/sync/logs` |
 
 Permissions are **system-defined**: they are seeded once via the
 `0001_auth_rbac_settings_audit.sql` migration and are immutable through

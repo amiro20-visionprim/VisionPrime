@@ -83,3 +83,39 @@ export interface PaginationMeta {
   totalItems: number;
   totalPages: number;
 }
+
+export interface WordPressConnection {
+  id: string;
+  siteUrl: string | null;
+  hasConsumerKey: boolean;
+  hasConsumerSecret: boolean;
+  hasSharedSecret: boolean;
+  hasPluginApiKey: boolean;
+  status: "disconnected" | "connected" | "error";
+  lastTestedAt: string | null;
+  lastTestSuccess: boolean | null;
+  lastTestMessage: string | null;
+  webhookRegistrationStatus: "not_registered" | "registered" | "failed";
+  webhookRegisteredAt: string | null;
+  settings: Record<string, unknown>;
+  updatedAt: string;
+  updatedBy: string | null;
+}
+
+export interface WordPressSyncJobRow {
+  id: string;
+  job_type: string;
+  status: "queued" | "running" | "succeeded" | "failed";
+  started_at: string | null;
+  finished_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WordPressSyncLogRow {
+  id: string;
+  sync_job_id: string | null;
+  level: "debug" | "info" | "warn" | "error";
+  message: string;
+  created_at: string;
+}

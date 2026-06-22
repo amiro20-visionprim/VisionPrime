@@ -31,9 +31,19 @@ import { createDbSessionsRepository } from "./modules/auth/sessions.repository.d
 import { AuthService, AuthServiceConfig } from "./modules/auth/auth.service";
 import { createAuthRouter } from "./modules/auth/auth.controller";
 
+import {
+  createDbWordPressConnectionRepository,
+  createDbWordPressSyncJobRepository,
+  createDbWordPressSyncLogRepository,
+  createDbWordPressWebhookEventRepository,
+} from "./modules/wordpress/wordpress.repository.db";
+import { WordPressService } from "./modules/wordpress/wordpress.service";
+import { createWordPressRouter } from "./modules/wordpress/wordpress.controller";
+
 export interface CreateAppOptions {
   db: Db;
   jwt: AuthServiceConfig;
+  integrationEncryptionKey: string;
 }
 
 /**
@@ -46,7 +56,7 @@ export interface CreateAppOptions {
  */
 export function createApp(logger: Logger, options: CreateAppOptions): Express {
   const app = express();
-  const { db, jwt } = options;
+  const { db, jwt, integrationEncryptionKey } = options;
 
   app.use(cors());
   app.use(express.json());
@@ -88,6 +98,24 @@ export function createApp(logger: Logger, options: CreateAppOptions): Express {
     createBusinessSettingsRouter({ businessSettingsService, accessSecret: jwt.accessSecret }),
   );
   app.use("/api/admin", createAuditRouter({ auditService, accessSecret: jwt.accessSecret }));
+
+  // --- Phase 04: WordPress/WooCommerce connection management ---
+  const wordpressConnectionRepository = createDbWordPressConnectionRepository(db);
+  const wordpressSyncJobRepository = createDbWordPressSyncJobRepository(db);
+  const wordpressSyncLogRepository = createDbWordPressSyncLogRepository(db);
+  const wordpressWebhookEventRepository = createDbWordPressWebhookEventRepository(db);
+  const wordpressService = new WordPressService({
+    connectionRepository: wordpressConnectionRepository,
+    syncJobRepository: wordpressSyncJobRepository,
+    syncLogRepository: wordpressSyncLogRepository,
+    webhookEventRepository: wordpressWebhookEventRepository,
+    auditService,
+    encryptionKey: integrationEncryptionKey,
+  });
+  app.use(
+    "/api/admin/integrations/wordpress",
+    createWordPressRouter({ wordpressService, accessSecret: jwt.accessSecret }),
+  );
 
   app.use(notFoundHandler);
   app.use(createErrorFilter(logger));

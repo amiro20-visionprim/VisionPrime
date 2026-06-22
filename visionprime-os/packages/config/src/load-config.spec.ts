@@ -10,6 +10,7 @@ describe("loadConfig", () => {
     LOG_LEVEL: "info",
     JWT_ACCESS_SECRET: "test-access-secret-please-change",
     JWT_REFRESH_SECRET: "test-refresh-secret-please-change",
+    INTEGRATION_ENCRYPTION_KEY: "test-integration-encryption-key-32chars",
   };
 
   it("returns a typed config when all required variables are present", () => {

@@ -17,6 +17,7 @@ try {
       accessTtlMinutes: config.JWT_ACCESS_TTL_MINUTES,
       refreshTtlDays: config.JWT_REFRESH_TTL_DAYS,
     },
+    integrationEncryptionKey: config.INTEGRATION_ENCRYPTION_KEY,
   });
 
   app.listen(config.PORT, () => {

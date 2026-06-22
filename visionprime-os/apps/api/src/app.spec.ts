@@ -18,6 +18,7 @@ describe("API foundation endpoints", () => {
       accessTtlMinutes: 15,
       refreshTtlDays: 7,
     },
+    integrationEncryptionKey: "test-integration-encryption-key-32chars",
   });
 
   it("GET /api/health returns a standard success envelope", async () => {

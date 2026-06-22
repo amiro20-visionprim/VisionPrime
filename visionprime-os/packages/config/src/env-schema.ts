@@ -18,6 +18,11 @@ export const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(16, "JWT_REFRESH_SECRET is required (min 16 chars)"),
   JWT_ACCESS_TTL_MINUTES: z.coerce.number().int().positive().default(15),
   JWT_REFRESH_TTL_DAYS: z.coerce.number().int().positive().default(7),
+
+  // --- Phase 04: WordPress/WooCommerce connection secrets — encrypted at rest. ---
+  INTEGRATION_ENCRYPTION_KEY: z
+    .string()
+    .min(32, "INTEGRATION_ENCRYPTION_KEY is required (min 32 chars, used as an AES-256-GCM key)"),
 });
 
 export type Env = z.infer<typeof envSchema>;

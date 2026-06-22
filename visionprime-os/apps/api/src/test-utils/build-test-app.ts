@@ -23,8 +23,19 @@ import { createMemorySessionsRepository } from "../modules/auth/sessions.reposit
 import { AuthService } from "../modules/auth/auth.service";
 import { createAuthRouter } from "../modules/auth/auth.controller";
 
+import {
+  createMemoryWordPressConnectionRepository,
+  createMemoryWordPressSyncJobRepository,
+  createMemoryWordPressSyncLogRepository,
+  createMemoryWordPressWebhookEventRepository,
+} from "../modules/wordpress/wordpress.repository.memory";
+import { WordPressService } from "../modules/wordpress/wordpress.service";
+import { createWordPressRouter } from "../modules/wordpress/wordpress.controller";
+
 import { UserRow } from "../modules/users/users.types";
 import { RoleRow } from "../modules/roles/roles.types";
+
+export const TEST_INTEGRATION_ENCRYPTION_KEY = "test-integration-encryption-key-32chars";
 
 export const TEST_JWT_CONFIG = {
   accessSecret: "test-access-secret-0123456789",
@@ -41,6 +52,7 @@ export interface TestAppHarness {
   authService: AuthService;
   usersService: UsersService;
   rolesService: RolesService;
+  wordpressService: WordPressService;
 }
 
 export function buildTestApp(options?: { users?: UserRow[]; roles?: RoleRow[] }): TestAppHarness {
@@ -69,6 +81,19 @@ export function buildTestApp(options?: { users?: UserRow[]; roles?: RoleRow[] })
   const rolesService = new RolesService({ rolesRepository, usersRepository, auditService });
   const businessSettingsService = new BusinessSettingsService({ repository: businessSettingsRepository, auditService });
 
+  const wordpressConnectionRepository = createMemoryWordPressConnectionRepository();
+  const wordpressSyncJobRepository = createMemoryWordPressSyncJobRepository();
+  const wordpressSyncLogRepository = createMemoryWordPressSyncLogRepository();
+  const wordpressWebhookEventRepository = createMemoryWordPressWebhookEventRepository();
+  const wordpressService = new WordPressService({
+    connectionRepository: wordpressConnectionRepository,
+    syncJobRepository: wordpressSyncJobRepository,
+    syncLogRepository: wordpressSyncLogRepository,
+    webhookEventRepository: wordpressWebhookEventRepository,
+    auditService,
+    encryptionKey: TEST_INTEGRATION_ENCRYPTION_KEY,
+  });
+
   app.use("/api/admin/auth", createAuthRouter({ authService, accessSecret: TEST_JWT_CONFIG.accessSecret }));
   app.use("/api/admin/users", createUsersRouter({ usersService, accessSecret: TEST_JWT_CONFIG.accessSecret }));
   app.use("/api/admin/roles", createRolesRouter({ rolesService, accessSecret: TEST_JWT_CONFIG.accessSecret }));
@@ -77,9 +102,13 @@ export function buildTestApp(options?: { users?: UserRow[]; roles?: RoleRow[] })
     createBusinessSettingsRouter({ businessSettingsService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
   );
   app.use("/api/admin", createAuditRouter({ auditService, accessSecret: TEST_JWT_CONFIG.accessSecret }));
+  app.use(
+    "/api/admin/integrations/wordpress",
+    createWordPressRouter({ wordpressService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
+  );
 
   app.use(notFoundHandler);
   app.use(createErrorFilter(createLogger("test", "error")));
 
-  return { app, usersRepository, rolesRepository, auditService, authService, usersService, rolesService };
+  return { app, usersRepository, rolesRepository, auditService, authService, usersService, rolesService, wordpressService };
 }

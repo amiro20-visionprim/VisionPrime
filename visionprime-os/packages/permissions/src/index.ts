@@ -20,6 +20,15 @@ export const SYSTEM_PERMISSIONS = [
   "settings:manage",
   "audit:view",
   "security_event:view",
+
+  // --- Phase 04: WordPress/WooCommerce connection management ---
+  "wordpress:view",
+  "wordpress:connect",
+  "wordpress:update",
+  "wordpress:test",
+  "wordpress:webhook_register",
+  "wordpress:sync_job:view",
+  "wordpress:sync_log:view",
 ] as const;
 
 export type Permission = (typeof SYSTEM_PERMISSIONS)[number];
