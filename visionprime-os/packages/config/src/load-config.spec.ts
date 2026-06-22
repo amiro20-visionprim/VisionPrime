@@ -8,6 +8,8 @@ describe("loadConfig", () => {
     DATABASE_URL: "postgresql://user:pass@localhost:5432/visionprime",
     REDIS_URL: "redis://localhost:6379",
     LOG_LEVEL: "info",
+    JWT_ACCESS_SECRET: "test-access-secret-please-change",
+    JWT_REFRESH_SECRET: "test-refresh-secret-please-change",
   };
 
   it("returns a typed config when all required variables are present", () => {

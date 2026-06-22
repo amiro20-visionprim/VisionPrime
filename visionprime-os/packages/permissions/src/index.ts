@@ -1,29 +1,47 @@
 /**
- * Placeholder RBAC scaffolding for Phase 01.
- *
- * Real module permissions (customers.view, wallet.credit, etc. — see
- * /docs/permissions.md) are added alongside their modules starting
- * Phase 02. This package only establishes the shapes and the
- * server-side enforcement entry point so later phases plug into a
- * single, consistent mechanism.
+ * Phase 03: system-defined RBAC permission catalog. Permissions are
+ * colon-separated (`resource:action`), immutable via API, and seeded only
+ * via the database migration (see
+ * packages/database/migrations/0001_auth_rbac_settings_audit.sql).
  */
 
-export type Permission = string;
+export const SYSTEM_PERMISSIONS = [
+  "auth:login",
+  "user:view",
+  "user:create",
+  "user:update",
+  "user:delete",
+  "role:view",
+  "role:create",
+  "role:update",
+  "role:delete",
+  "permission:view",
+  "settings:view",
+  "settings:manage",
+  "audit:view",
+  "security_event:view",
+] as const;
 
-export type Role = "owner" | "manager" | "support" | "viewer";
+export type Permission = (typeof SYSTEM_PERMISSIONS)[number];
+
+/**
+ * Permissions a user must never lose on themselves via a role edit —
+ * losing any of these would lock the acting user out of RBAC management.
+ */
+export const CRITICAL_PERMISSIONS: Permission[] = ["user:update", "role:update", "permission:view"];
 
 export interface PermissionContext {
   userId: string;
-  roles: Role[];
+  isSuperAdmin: boolean;
   permissions: Permission[];
 }
 
 /**
  * Server-side permission check. Frontend permission-based UI hiding is a
- * convenience only; this function (or its eventual real implementation)
- * is the actual enforcement point and must be called on every guarded
- * endpoint.
+ * convenience only; this function is the actual enforcement point and
+ * must be called on every guarded endpoint. Super admins implicitly hold
+ * every permission.
  */
 export function hasPermission(context: PermissionContext, required: Permission): boolean {
-  return context.permissions.includes(required);
+  return context.isSuperAdmin || context.permissions.includes(required);
 }
