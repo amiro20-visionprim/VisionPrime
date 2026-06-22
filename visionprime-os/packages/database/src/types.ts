@@ -11,4 +11,12 @@ export interface QueryResult<T> {
 
 export interface Db {
   query<T = unknown>(text: string, params?: unknown[]): Promise<QueryResult<T>>;
+  /**
+   * Runs `fn` against a single connection wrapped in BEGIN/COMMIT (ROLLBACK
+   * on throw). Required for financial modules (e.g. wallet ledger) where a
+   * balance check + ledger insert + snapshot insert must be atomic. Plain
+   * `query()` callers are not transactional — only repositories that need
+   * it should call this.
+   */
+  withTransaction<T>(fn: (tx: Db) => Promise<T>): Promise<T>;
 }

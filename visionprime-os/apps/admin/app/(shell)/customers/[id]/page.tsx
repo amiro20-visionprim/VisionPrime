@@ -21,7 +21,7 @@ import {
 import { apiClient } from "../../../lib/api-client";
 import { useAuth } from "../../../lib/auth-client";
 import { friendlyErrorMessage } from "../../../lib/error-message";
-import { Customer360, Customer360Order } from "../../../lib/types";
+import { Customer360, Customer360Order, Wallet } from "../../../lib/types";
 
 type TabKey = "overview" | "metrics" | "orders" | "notes" | "tags" | "identities" | "events";
 
@@ -51,6 +51,9 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
   const [tagText, setTagText] = useState("");
   const [isAddingTag, setIsAddingTag] = useState(false);
 
+  const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [isLoadingWallet, setIsLoadingWallet] = useState(true);
+
   const load = useCallback(async () => {
     setIsLoading(true);
     setError(undefined);
@@ -67,6 +70,18 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!userPermissions || userPermissions.includes("wallet:view")) {
+      apiClient
+        .get<Wallet>(`/api/admin/wallets/${params.id}`)
+        .then(setWallet)
+        .catch(() => setWallet(null))
+        .finally(() => setIsLoadingWallet(false));
+    } else {
+      setIsLoadingWallet(false);
+    }
+  }, [params.id, userPermissions]);
 
   async function handleAddNote() {
     if (!noteText.trim()) return;
@@ -151,6 +166,21 @@ export default function CustomerDetailPage({ params }: { params: { id: string } 
             <p>
               <strong>Created:</strong> {new Date(customer.created_at).toLocaleString()}
             </p>
+
+            <Can permission="wallet:view" userPermissions={userPermissions}>
+              <div style={{ marginTop: "1.5rem" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem" }}>
+                  <MetricCard
+                    label="Wallet Balance"
+                    value={wallet ? `$${(wallet.availableBalanceCents / 100).toFixed(2)}` : "—"}
+                    isLoading={isLoadingWallet}
+                  />
+                </div>
+                <Button variant="secondary" style={{ marginTop: "0.75rem" }} onClick={() => router.push(`/wallet/${customer.id}`)}>
+                  View Wallet
+                </Button>
+              </div>
+            </Can>
           </div>
         ) : null}
 

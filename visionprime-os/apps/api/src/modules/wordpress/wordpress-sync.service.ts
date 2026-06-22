@@ -23,6 +23,15 @@ export interface WordPressSyncServiceDeps {
   ordersRepository: OrdersRepository;
   wooCommerceClient: WooCommerceApiClient;
   encryptionKey: string;
+  /** Wallet cashback hooks — injected as closures (rather than importing
+   * the wallet module directly) to avoid a circular module dependency. */
+  applyCashbackForOrder?: (params: {
+    customerId: string;
+    woocommerceOrderId: string;
+    orderTotalMajorUnits: number;
+    currency?: string;
+  }) => Promise<unknown>;
+  reverseCashbackForOrder?: (woocommerceOrderId: string) => Promise<unknown>;
 }
 
 /** "positive" = counts toward purchase metrics, "negative" = reverses a prior positive effect, "none" = no effect. */
@@ -310,6 +319,17 @@ export class WordPressSyncService {
           totalSpentDelta: Number(row.total),
           lastPurchaseAt: row.ordered_at ?? new Date().toISOString(),
         });
+        if (this.deps.applyCashbackForOrder) {
+          await this.deps.applyCashbackForOrder({
+            customerId: customer.id,
+            woocommerceOrderId: String(remote.id),
+            orderTotalMajorUnits: Number(row.total),
+            currency: remote.currency ?? undefined,
+          });
+        }
+      }
+      if (previousEffect === "positive" && newEffect !== "positive" && this.deps.reverseCashbackForOrder) {
+        await this.deps.reverseCashbackForOrder(String(remote.id));
       }
     }
 
@@ -339,6 +359,9 @@ export class WordPressSyncService {
         purchaseCountDelta: -1,
         totalSpentDelta: -Number(row.total),
       });
+      if (this.deps.reverseCashbackForOrder) {
+        await this.deps.reverseCashbackForOrder(woocommerceOrderId);
+      }
     }
 
     await this.deps.ordersRepository.recordEvent(row.id, "order.deleted", { previousStatus });

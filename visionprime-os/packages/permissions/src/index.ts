@@ -46,6 +46,13 @@ export const SYSTEM_PERMISSIONS = [
   "order:view",
   "order:sync",
   "wordpress:webhook:view",
+
+  // --- Phase 07: wallet ledger ---
+  "wallet:view",
+  "wallet:manual_credit",
+  "wallet:manual_debit",
+  "wallet:reverse",
+  "wallet:report:view",
 ] as const;
 
 export type Permission = (typeof SYSTEM_PERMISSIONS)[number];

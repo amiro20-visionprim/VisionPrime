@@ -1,6 +1,6 @@
 import { loadConfig, EnvironmentValidationError } from "@visionprime/config";
 import { createLogger } from "@visionprime/logger";
-import { createPool } from "@visionprime/database";
+import { createDb, createPool } from "@visionprime/database";
 import { createApp } from "./app";
 
 const bootstrapLogger = createLogger("api:bootstrap");
@@ -8,7 +8,7 @@ const bootstrapLogger = createLogger("api:bootstrap");
 try {
   const config = loadConfig();
   const logger = createLogger("api", config.LOG_LEVEL);
-  const db = createPool({ url: config.DATABASE_URL });
+  const db = createDb(createPool({ url: config.DATABASE_URL }));
   const app = createApp(logger, {
     db,
     jwt: {

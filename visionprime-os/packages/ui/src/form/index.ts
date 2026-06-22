@@ -1,5 +1,6 @@
 export * from "./FormField";
 export * from "./Input";
+export * from "./MoneyInput";
 export * from "./Textarea";
 export * from "./Select";
 export * from "./MultiSelect";

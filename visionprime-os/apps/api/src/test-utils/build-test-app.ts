@@ -49,6 +49,10 @@ import { createMemoryOrdersRepository } from "../modules/orders/orders.repositor
 import { OrdersService } from "../modules/orders/orders.service";
 import { createOrdersRouter } from "../modules/orders/orders.controller";
 
+import { createMemoryWalletRepository } from "../modules/wallet/wallet.repository.memory";
+import { WalletService } from "../modules/wallet/wallet.service";
+import { createWalletRouter } from "../modules/wallet/wallet.controller";
+
 import { UserRow } from "../modules/users/users.types";
 import { RoleRow } from "../modules/roles/roles.types";
 import { CustomerRow } from "../modules/customers/customers.types";
@@ -91,6 +95,8 @@ export interface TestAppHarness {
   ordersRepository: ReturnType<typeof createMemoryOrdersRepository>;
   ordersService: OrdersService;
   wordpressWebhookEventRepository: ReturnType<typeof createMemoryWordPressWebhookEventRepository>;
+  walletRepository: ReturnType<typeof createMemoryWalletRepository>;
+  walletService: WalletService;
 }
 
 export function buildTestApp(options?: {
@@ -148,6 +154,8 @@ export function buildTestApp(options?: {
   const customersRepository = createMemoryCustomersRepository(options?.customers ?? []);
   const productsRepository = createMemoryProductsRepository(options?.products ?? []);
   const ordersRepository = createMemoryOrdersRepository();
+  const walletRepository = createMemoryWalletRepository();
+  const walletService = new WalletService({ walletRepository, auditService });
 
   const syncService = new WordPressSyncService({
     connectionRepository: wordpressConnectionRepository,
@@ -159,6 +167,8 @@ export function buildTestApp(options?: {
     ordersRepository,
     wooCommerceClient: options?.wooCommerceClient ?? createFakeWooCommerceApiClient(),
     encryptionKey: TEST_INTEGRATION_ENCRYPTION_KEY,
+    applyCashbackForOrder: (params) => walletService.applyCashbackForOrder(params),
+    reverseCashbackForOrder: (woocommerceOrderId) => walletService.reverseCashbackForOrder(woocommerceOrderId),
   });
 
   app.use(
@@ -218,6 +228,11 @@ export function buildTestApp(options?: {
     }),
   );
 
+  app.use(
+    "/api/admin/wallets",
+    createWalletRouter({ walletService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
+  );
+
   app.use(notFoundHandler);
   app.use(createErrorFilter(createLogger("test", "error")));
 
@@ -238,5 +253,7 @@ export function buildTestApp(options?: {
     ordersRepository,
     ordersService,
     wordpressWebhookEventRepository,
+    walletRepository,
+    walletService,
   };
 }

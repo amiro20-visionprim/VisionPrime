@@ -56,6 +56,10 @@ import { createDbOrdersRepository } from "./modules/orders/orders.repository.db"
 import { OrdersService } from "./modules/orders/orders.service";
 import { createOrdersRouter } from "./modules/orders/orders.controller";
 
+import { createDbWalletRepository } from "./modules/wallet/wallet.repository.db";
+import { WalletService } from "./modules/wallet/wallet.service";
+import { createWalletRouter } from "./modules/wallet/wallet.controller";
+
 export interface CreateAppOptions {
   db: Db;
   jwt: AuthServiceConfig;
@@ -96,6 +100,10 @@ export function createApp(logger: Logger, options: CreateAppOptions): Express {
   // --- Phase 06: orders ---
   const ordersRepository = createDbOrdersRepository(db);
 
+  // --- Phase 07: wallet ledger ---
+  const walletRepository = createDbWalletRepository(db);
+  const walletService = new WalletService({ walletRepository, auditService });
+
   const syncService = new WordPressSyncService({
     connectionRepository: wordpressConnectionRepository,
     syncJobRepository: wordpressSyncJobRepository,
@@ -106,6 +114,8 @@ export function createApp(logger: Logger, options: CreateAppOptions): Express {
     ordersRepository,
     wooCommerceClient: createFetchWooCommerceApiClient(),
     encryptionKey: integrationEncryptionKey,
+    applyCashbackForOrder: (params) => walletService.applyCashbackForOrder(params),
+    reverseCashbackForOrder: (woocommerceOrderId) => walletService.reverseCashbackForOrder(woocommerceOrderId),
   });
 
   // Mounted BEFORE the global JSON body parser: this router owns its own
@@ -192,6 +202,11 @@ export function createApp(logger: Logger, options: CreateAppOptions): Express {
       syncOrdersFromWordPress: (actorId) => syncService.syncOrders(actorId),
       accessSecret: jwt.accessSecret,
     }),
+  );
+
+  app.use(
+    "/api/admin/wallets",
+    createWalletRouter({ walletService, accessSecret: jwt.accessSecret }),
   );
 
   app.use(notFoundHandler);

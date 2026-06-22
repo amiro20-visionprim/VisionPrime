@@ -8,6 +8,9 @@ describe("API foundation endpoints", () => {
     async query() {
       return { rows: [], rowCount: 0 };
     },
+    async withTransaction(fn) {
+      return fn(fakeDb);
+    },
   };
 
   const app = createApp(createLogger("test", "error"), {

@@ -260,3 +260,38 @@ export interface ProductCategory {
   created_at: string;
   updated_at: string;
 }
+
+export interface Wallet {
+  id: string;
+  customerId: string;
+  currency: string;
+  status: string;
+  availableBalanceCents: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WalletLedgerEntry {
+  id: string;
+  wallet_id: string;
+  customer_id: string;
+  type: string;
+  direction: "credit" | "debit";
+  amount_cents: number;
+  currency: string;
+  reason: string;
+  internal_note: string | null;
+  reference_type: string | null;
+  reference_id: string | null;
+  idempotency_key: string | null;
+  reversed_entry_id: string | null;
+  metadata: Record<string, unknown>;
+  created_by_user_id: string | null;
+  created_at: string;
+}
+
+export interface WalletLiabilityReport {
+  totalLiabilityCents: number;
+  walletCount: number;
+  currency: string;
+}
