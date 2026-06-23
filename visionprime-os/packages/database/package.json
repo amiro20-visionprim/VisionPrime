@@ -1,0 +1,22 @@
+{
+  "name": "@visionprime/database",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "echo \"no tests yet for @visionprime/database\" && exit 0",
+    "migrate": "ts-node-dev --transpile-only --once src/run-migrate.ts",
+    "seed": "ts-node-dev --transpile-only --once src/run-seed.ts"
+  },
+  "dependencies": {
+    "pg": "^8.11.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "ts-node-dev": "^2.0.0",
+    "@types/pg": "^8.11.6",
+    "@types/node": "^20.12.7"
+  }
+}

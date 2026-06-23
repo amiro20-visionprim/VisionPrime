@@ -1,0 +1,23 @@
+{
+  "name": "@visionprime/admin-crud",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "echo \"no tests yet for @visionprime/admin-crud\" && exit 0"
+  },
+  "dependencies": {
+    "@visionprime/ui": "0.1.0",
+    "@visionprime/api-client": "0.1.0"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "react": "^18.2.0",
+    "@types/react": "^18.2.0"
+  }
+}

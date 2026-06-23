@@ -1,0 +1,30 @@
+.visionprime-connector-settings .vp-connection-result {
+	margin-top: 0.5em;
+	padding: 0.5em;
+	min-height: 1.5em;
+}
+
+.visionprime-connector-settings .vp-connection-result.vp-success {
+	color: #1e7e34;
+}
+
+.visionprime-connector-settings .vp-connection-result.vp-error {
+	color: #b32d2e;
+}
+
+.visionprime-connector-settings #vp-test-connection.vp-is-loading,
+.visionprime-connector-settings #vp-register-webhooks.vp-is-loading,
+.visionprime-connector-settings #vp-sync-current-user.vp-is-loading,
+.visionprime-connector-settings #vp-clear-cache.vp-is-loading,
+.visionprime-connector-settings #vp-send-test-event.vp-is-loading {
+	opacity: 0.6;
+	pointer-events: none;
+}
+
+.visionprime-connector-settings .vp-sync-status .vp-log {
+	max-height: 300px;
+	overflow-y: auto;
+	background: #f6f7f7;
+	padding: 0.5em;
+	font-size: 12px;
+}

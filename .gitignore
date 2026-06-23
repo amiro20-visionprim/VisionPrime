@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+vendor/
+
+# Build output
+dist/
+build/
+out/
+.next/
+.turbo/
+*.tsbuildinfo
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor / OS
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Testing / coverage
+coverage/
+.nyc_output/
+
+# WordPress plugin packaging
+*.zip
+
+# WordPress local dev artifacts
+wp-content/uploads/
+wp-content/upgrade/
+wp-content/cache/
+.wp-env.override.json
+
+# Misc
+*.tmp
+*.bak
+
+# Agent tooling worktrees (not project content)
+.claude/

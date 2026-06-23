@@ -1,0 +1,24 @@
+{
+  "name": "@visionprime/admin",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "test": "echo \"no tests yet for @visionprime/admin\" && exit 0"
+  },
+  "dependencies": {
+    "@visionprime/api-client": "0.1.0",
+    "@visionprime/ui": "0.1.0",
+    "next": "^14.2.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "typescript": "^5.4.0"
+  }
+}
