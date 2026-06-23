@@ -55,7 +55,10 @@ create table if not exists campaigns (
   name text not null,
   segment_id uuid not null references segments(id),
   channel text not null check (channel in ('sms', 'email', 'in_app')),
-  message_template_id uuid references message_templates(id),
+  -- FK added below via ALTER TABLE, once message_templates exists
+  -- (declaring it inline here would fail on a fresh database since
+  -- message_templates is created later in this same file).
+  message_template_id uuid,
   status text not null default 'draft' check (status in (
     'draft', 'pending_approval', 'approved', 'sending', 'sent', 'failed'
   )),
