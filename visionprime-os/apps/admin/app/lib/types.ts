@@ -403,3 +403,125 @@ export interface RewardRedemption {
   woocommerceOrderId: string | null;
   createdAt: string;
 }
+
+export type SegmentType = "dynamic" | "static";
+export type SegmentConditionOperator = "gt" | "gte" | "lt" | "lte" | "eq" | "in";
+
+export interface SegmentCondition {
+  id: string;
+  conditionType: string;
+  operator: SegmentConditionOperator;
+  value: unknown;
+}
+
+export interface Segment {
+  id: string;
+  name: string;
+  description: string | null;
+  segmentType: SegmentType;
+  isActive: boolean;
+  lastEvaluatedAt: string | null;
+  conditions: SegmentCondition[];
+  memberCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SegmentMember {
+  customerId: string;
+  addedAt: string;
+}
+
+export type NotificationChannel = "sms" | "email" | "in_app";
+export type CampaignStatus = "draft" | "pending_approval" | "approved" | "sending" | "sent" | "failed";
+export type CampaignRecipientStatus = "pending" | "sent" | "failed" | "skipped";
+
+export interface Campaign {
+  id: string;
+  name: string;
+  segmentId: string;
+  channel: NotificationChannel;
+  messageTemplateId: string | null;
+  status: CampaignStatus;
+  requiresApproval: boolean;
+  approvedAt: string | null;
+  approvedBy: string | null;
+  scheduledAt: string | null;
+  sentAt: string | null;
+  config: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CampaignRecipient {
+  id: string;
+  customerId: string;
+  status: CampaignRecipientStatus;
+  errorMessage: string | null;
+  sentAt: string | null;
+  createdAt: string;
+}
+
+export interface CampaignPreview {
+  campaignId: string;
+  eligibleRecipientCount: number;
+  sampleRecipientIds: string[];
+  renderedBody: string | null;
+}
+
+export interface CampaignReport {
+  campaignId: string;
+  status: CampaignStatus;
+  totalRecipients: number;
+  sent: number;
+  failed: number;
+  skipped: number;
+  pending: number;
+  opened: number;
+  clicked: number;
+}
+
+export interface MessageTemplate {
+  id: string;
+  name: string;
+  channel: NotificationChannel;
+  subject: string | null;
+  body: string;
+  variables: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NotificationProvider {
+  id: string;
+  name: string;
+  channel: NotificationChannel;
+  providerType: string;
+  credentialsPreview: string | null;
+  isActive: boolean;
+  config: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NotificationOptOut {
+  id: string;
+  customerId: string;
+  channel: NotificationChannel;
+  reason: string | null;
+  createdAt: string;
+}
+
+export interface SuppressionList {
+  id: string;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SuppressionListMember {
+  customerId: string;
+  addedAt: string;
+}

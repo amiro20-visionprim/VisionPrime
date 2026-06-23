@@ -25,6 +25,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Campaigns", href: "/campaigns" },
   { label: "Automations", href: "/automations" },
   { label: "Notifications", href: "/notifications" },
+  { label: "Message Templates", href: "/message-templates" },
+  { label: "Notification Providers", href: "/notification-providers" },
   { label: "Finance", href: "/finance" },
   { label: "Reports", href: "/reports" },
   { label: "Intelligence", href: "/intelligence" },
