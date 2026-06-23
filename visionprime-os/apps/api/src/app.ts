@@ -86,6 +86,24 @@ import {
   createRewardRedemptionsRouter,
 } from "./modules/rewards/rewards.controller";
 
+import { createDbSegmentsRepository } from "./modules/segments/segments.repository.db";
+import { SegmentsService } from "./modules/segments/segments.service";
+import { createSegmentsRouter } from "./modules/segments/segments.controller";
+
+import { createDbNotificationsRepository } from "./modules/notifications/notifications.repository.db";
+import { NotificationsService } from "./modules/notifications/notifications.service";
+import {
+  createMessageTemplatesRouter,
+  createNotificationProvidersRouter,
+  createOptOutsRouter,
+  createSuppressionListsRouter,
+} from "./modules/notifications/notifications.controller";
+
+import { createDbCampaignsRepository } from "./modules/campaigns/campaigns.repository.db";
+import { CampaignsService } from "./modules/campaigns/campaigns.service";
+import { createCampaignsRouter } from "./modules/campaigns/campaigns.controller";
+import { createJobRunner } from "./common/jobs";
+
 export interface CreateAppOptions {
   db: Db;
   jwt: AuthServiceConfig;
@@ -311,6 +329,61 @@ export function createApp(logger: Logger, options: CreateAppOptions): Express {
     "/api/admin/reward-redemptions",
     createRewardRedemptionsRouter({ rewardsService, accessSecret: jwt.accessSecret }),
   );
+
+  // --- Phase 11: segments, campaigns, notifications ---
+  const segmentsRepository = createDbSegmentsRepository(db);
+  const segmentsService = new SegmentsService({
+    segmentsRepository,
+    auditService,
+    evaluationDeps: {
+      customersRepository,
+      ordersRepository,
+      productsRepository,
+      rewardsRepository,
+      walletService,
+      pointsService,
+      loyaltyService,
+      campaignEventLookup: async (campaignId, eventType) => {
+        const events = await campaignsRepository.listEvents(campaignId);
+        return new Set(events.filter((e) => e.event_type === eventType && e.customer_id).map((e) => e.customer_id as string));
+      },
+    },
+  });
+  app.use("/api/admin/segments", createSegmentsRouter({ segmentsService, accessSecret: jwt.accessSecret }));
+
+  const notificationsRepository = createDbNotificationsRepository(db);
+  const notificationsService = new NotificationsService({
+    notificationsRepository,
+    auditService,
+    encryptionKey: integrationEncryptionKey,
+  });
+  app.use(
+    "/api/admin/message-templates",
+    createMessageTemplatesRouter({ notificationsService, accessSecret: jwt.accessSecret }),
+  );
+  app.use(
+    "/api/admin/notification-providers",
+    createNotificationProvidersRouter({ notificationsService, accessSecret: jwt.accessSecret }),
+  );
+  app.use(
+    "/api/admin/notification-opt-outs",
+    createOptOutsRouter({ notificationsService, accessSecret: jwt.accessSecret }),
+  );
+  app.use(
+    "/api/admin/suppression-lists",
+    createSuppressionListsRouter({ notificationsService, accessSecret: jwt.accessSecret }),
+  );
+
+  const campaignsRepository = createDbCampaignsRepository(db);
+  const campaignsService = new CampaignsService({
+    campaignsRepository,
+    segmentsService,
+    notificationsService,
+    auditService,
+    jobRunner: createJobRunner(),
+    highCostApprovalThreshold: null,
+  });
+  app.use("/api/admin/campaigns", createCampaignsRouter({ campaignsService, accessSecret: jwt.accessSecret }));
 
   app.use(notFoundHandler);
   app.use(createErrorFilter(logger));

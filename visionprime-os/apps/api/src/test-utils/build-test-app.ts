@@ -80,6 +80,24 @@ import {
   createRewardRedemptionsRouter,
 } from "../modules/rewards/rewards.controller";
 
+import { createMemorySegmentsRepository } from "../modules/segments/segments.repository.memory";
+import { SegmentsService } from "../modules/segments/segments.service";
+import { createSegmentsRouter } from "../modules/segments/segments.controller";
+
+import { createMemoryNotificationsRepository } from "../modules/notifications/notifications.repository.memory";
+import { NotificationsService } from "../modules/notifications/notifications.service";
+import {
+  createMessageTemplatesRouter,
+  createNotificationProvidersRouter,
+  createOptOutsRouter,
+  createSuppressionListsRouter,
+} from "../modules/notifications/notifications.controller";
+
+import { createMemoryCampaignsRepository } from "../modules/campaigns/campaigns.repository.memory";
+import { CampaignsService } from "../modules/campaigns/campaigns.service";
+import { createCampaignsRouter } from "../modules/campaigns/campaigns.controller";
+import { createTestJobRunner, TestJobRunner } from "../common/jobs";
+
 import { UserRow } from "../modules/users/users.types";
 import { RoleRow } from "../modules/roles/roles.types";
 import { CustomerRow } from "../modules/customers/customers.types";
@@ -136,6 +154,13 @@ export interface TestAppHarness {
   pointsService: PointsService;
   rewardsRepository: ReturnType<typeof createMemoryRewardsRepository>;
   rewardsService: RewardsService;
+  segmentsRepository: ReturnType<typeof createMemorySegmentsRepository>;
+  segmentsService: SegmentsService;
+  notificationsRepository: ReturnType<typeof createMemoryNotificationsRepository>;
+  notificationsService: NotificationsService;
+  campaignsRepository: ReturnType<typeof createMemoryCampaignsRepository>;
+  campaignsService: CampaignsService;
+  jobRunner: TestJobRunner;
 }
 
 export function buildTestApp(options?: {
@@ -344,6 +369,62 @@ export function buildTestApp(options?: {
     createRewardRedemptionsRouter({ rewardsService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
   );
 
+  // --- Phase 11: segments, campaigns, notifications ---
+  const segmentsRepository = createMemorySegmentsRepository();
+  const campaignsRepository = createMemoryCampaignsRepository();
+  const segmentsService = new SegmentsService({
+    segmentsRepository,
+    auditService,
+    evaluationDeps: {
+      customersRepository,
+      ordersRepository,
+      productsRepository,
+      rewardsRepository,
+      walletService,
+      pointsService,
+      loyaltyService,
+      campaignEventLookup: async (campaignId, eventType) => {
+        const events = await campaignsRepository.listEvents(campaignId);
+        return new Set(events.filter((e) => e.event_type === eventType && e.customer_id).map((e) => e.customer_id as string));
+      },
+    },
+  });
+  app.use("/api/admin/segments", createSegmentsRouter({ segmentsService, accessSecret: TEST_JWT_CONFIG.accessSecret }));
+
+  const notificationsRepository = createMemoryNotificationsRepository();
+  const notificationsService = new NotificationsService({
+    notificationsRepository,
+    auditService,
+    encryptionKey: TEST_INTEGRATION_ENCRYPTION_KEY,
+  });
+  app.use(
+    "/api/admin/message-templates",
+    createMessageTemplatesRouter({ notificationsService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
+  );
+  app.use(
+    "/api/admin/notification-providers",
+    createNotificationProvidersRouter({ notificationsService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
+  );
+  app.use(
+    "/api/admin/notification-opt-outs",
+    createOptOutsRouter({ notificationsService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
+  );
+  app.use(
+    "/api/admin/suppression-lists",
+    createSuppressionListsRouter({ notificationsService, accessSecret: TEST_JWT_CONFIG.accessSecret }),
+  );
+
+  const jobRunner = createTestJobRunner();
+  const campaignsService = new CampaignsService({
+    campaignsRepository,
+    segmentsService,
+    notificationsService,
+    auditService,
+    jobRunner,
+    highCostApprovalThreshold: null,
+  });
+  app.use("/api/admin/campaigns", createCampaignsRouter({ campaignsService, accessSecret: TEST_JWT_CONFIG.accessSecret }));
+
   app.use(notFoundHandler);
   app.use(createErrorFilter(createLogger("test", "error")));
 
@@ -376,5 +457,12 @@ export function buildTestApp(options?: {
     pointsService,
     rewardsRepository,
     rewardsService,
+    segmentsRepository,
+    segmentsService,
+    notificationsRepository,
+    notificationsService,
+    campaignsRepository,
+    campaignsService,
+    jobRunner,
   };
 }

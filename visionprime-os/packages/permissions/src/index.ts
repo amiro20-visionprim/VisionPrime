@@ -68,6 +68,24 @@ export const SYSTEM_PERMISSIONS = [
   "reward:delete",
   "reward_claim:view",
   "reward_redemption:view",
+
+  // --- Phase 11: segmentation, campaign management, message templates,
+  // notification providers, opt-out, suppression lists ---
+  "segment:view",
+  "segment:create",
+  "segment:update",
+  "segment:delete",
+  "segment:evaluate",
+  "campaign:view",
+  "campaign:create",
+  "campaign:update",
+  "campaign:delete",
+  "campaign:send",
+  "campaign:report:view",
+  "message_template:view",
+  "message_template:manage",
+  "notification_provider:view",
+  "notification_provider:manage",
 ] as const;
 
 export type Permission = (typeof SYSTEM_PERMISSIONS)[number];
