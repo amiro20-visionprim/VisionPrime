@@ -11,6 +11,8 @@ export interface CustomerRow {
   average_order_value: string;
   last_purchase_at: string | null;
   lifetime_value: string;
+  gender: string | null;
+  city: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;

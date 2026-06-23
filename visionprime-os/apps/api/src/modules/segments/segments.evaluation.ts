@@ -97,7 +97,7 @@ async function evaluateOne(condition: SegmentConditionRow, deps: SegmentEvaluati
     }
     case "city": {
       for (const c of customers) {
-        if (matches(condition.operator, (c as { city?: string | null }).city ?? null, condition.value)) {
+        if (matches(condition.operator, c.city, condition.value)) {
           matched.add(c.id);
         }
       }
@@ -105,7 +105,7 @@ async function evaluateOne(condition: SegmentConditionRow, deps: SegmentEvaluati
     }
     case "gender": {
       for (const c of customers) {
-        if (matches(condition.operator, (c as { gender?: string | null }).gender ?? null, condition.value)) {
+        if (matches(condition.operator, c.gender, condition.value)) {
           matched.add(c.id);
         }
       }

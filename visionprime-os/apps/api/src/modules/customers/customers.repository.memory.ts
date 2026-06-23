@@ -96,6 +96,8 @@ export function createMemoryCustomersRepository(seed: CustomerRow[] = []) {
         average_order_value: "0",
         last_purchase_at: null,
         lifetime_value: "0",
+        gender: null,
+        city: null,
         created_at: now,
         updated_at: now,
         deleted_at: null,
