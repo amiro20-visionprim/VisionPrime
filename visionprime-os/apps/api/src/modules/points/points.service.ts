@@ -116,6 +116,53 @@ export class PointsService {
     return result.entry;
   }
 
+  /**
+   * Generic manual points award, mirroring WalletService.manualCredit's
+   * idempotency pattern. Used by automation's add_points action (and any
+   * future manual admin "award points" UI). Recomputes tier via
+   * loyaltyService unless this is an idempotent replay (replays must
+   * never double-apply a tier recompute).
+   */
+  async awardManualPoints(
+    customerId: string,
+    points: number,
+    reason: string,
+    actor: PointsActor,
+    idempotencyKey?: string,
+  ): Promise<PointsLedgerEntryRow | null> {
+    // Points awards have no separate "points_awarded" automation trigger
+    // in the Phase 12 trigger set, so no loop-prevention flag is needed
+    // here (unlike wallet_credited/reward_claimed).
+    if (!points || points <= 0) return null;
+    const key = idempotencyKey ? `manual_award:${idempotencyKey}` : null;
+    const result = await this.deps.pointsRepository.recordEntry({
+      customerId,
+      type: "manual_award",
+      direction: "credit",
+      points,
+      reason,
+      referenceType: "manual",
+      referenceId: idempotencyKey ?? null,
+      idempotencyKey: key,
+    });
+
+    if (!result.idempotentReplay) {
+      await this.deps.auditService.recordAuditLog({
+        actorId: actor.userId,
+        action: "points.manual_award",
+        targetType: "points_ledger_entry",
+        targetId: result.entry.id,
+        before: null,
+        after: { entry: result.entry, balance: result.balance },
+      });
+      if (this.deps.loyaltyService) {
+        await this.deps.loyaltyService.recomputeTierForCustomer(customerId, points);
+      }
+    }
+
+    return result.entry;
+  }
+
   /** Used by RewardsService to deduct points on claim — never a direct
    * balance mutation, always a ledger debit. */
   async debitForRewardClaim(params: {

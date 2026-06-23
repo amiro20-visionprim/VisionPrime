@@ -24,6 +24,11 @@ export interface RewardsServiceDeps {
   rewardReservationRepository: RewardReservationRepository;
   pointsService: PointsService;
   auditService: AuditService;
+  /** Fires the `reward_claimed` automation trigger after a claim is
+   * created. Skipped when automation's own add_reward action calls
+   * claimReward (see the `skipAutomationTrigger` parameter), preventing
+   * an automation-driven claim from re-triggering itself. */
+  onRewardClaimed?: (params: { customerId: string; rewardId: string; claimId: string }) => void | Promise<void>;
 }
 
 function newExpiresAt(): string {
@@ -110,7 +115,7 @@ export class RewardsService {
    * the wallet/points idempotency keys, applied to a count instead of a
    * single key since a customer may legitimately claim a reward more
    * than once (unlike "points for this order"). */
-  async claimReward(rewardId: string, customerId: string, actor?: RewardsActor) {
+  async claimReward(rewardId: string, customerId: string, actor?: RewardsActor, skipAutomationTrigger = false) {
     const reward = await this.deps.rewardsRepository.findRewardById(rewardId);
     if (!reward) throw new NotFoundError("Reward not found");
     if (!reward.is_active) {
@@ -151,6 +156,14 @@ export class RewardsService {
       before: null,
       after: { claim },
     });
+
+    if (!skipAutomationTrigger && this.deps.onRewardClaimed) {
+      try {
+        await this.deps.onRewardClaimed({ customerId, rewardId, claimId: claim.id });
+      } catch {
+        // Trigger dispatch failures must never surface as a claim API error.
+      }
+    }
 
     return toPublicRewardClaim(claim);
   }

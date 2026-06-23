@@ -86,6 +86,19 @@ export const SYSTEM_PERMISSIONS = [
   "message_template:manage",
   "notification_provider:view",
   "notification_provider:manage",
+
+  // --- Phase 12: automation workflows, dashboards/reports, AI recommendation base ---
+  "automation:view",
+  "automation:create",
+  "automation:update",
+  "automation:delete",
+  "automation:activate",
+  "automation:run:view",
+  "report:view",
+  "report:export",
+  "ai:view",
+  "ai:recommendation:approve",
+  "ai:recommendation:reject",
 ] as const;
 
 export type Permission = (typeof SYSTEM_PERMISSIONS)[number];

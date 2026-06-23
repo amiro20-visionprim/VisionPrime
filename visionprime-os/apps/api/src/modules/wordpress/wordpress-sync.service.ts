@@ -40,6 +40,16 @@ export interface WordPressSyncServiceDeps {
     currency?: string;
   }) => Promise<unknown>;
   reversePointsForOrder?: (woocommerceOrderId: string) => Promise<unknown>;
+  /** Fires order-status-change automation triggers (order_completed/
+   * order_cancelled/order_refunded/woocommerce_order_status_changed —
+   * the automations module inspects the specific status to decide which
+   * trigger(s) fired). Fire-and-forget, never throws past sync. */
+  onOrderStatusChanged?: (params: {
+    customerId: string;
+    woocommerceOrderId: string;
+    previousStatus: string | null;
+    newStatus: string;
+  }) => void | Promise<void>;
 }
 
 /** "positive" = counts toward purchase metrics, "negative" = reverses a prior positive effect, "none" = no effect. */
@@ -356,6 +366,19 @@ export class WordPressSyncService {
       status: remote.status,
       previousStatus,
     });
+
+    if (previousStatus !== remote.status && this.deps.onOrderStatusChanged) {
+      try {
+        await this.deps.onOrderStatusChanged({
+          customerId: customer.id,
+          woocommerceOrderId: String(remote.id),
+          previousStatus,
+          newStatus: remote.status,
+        });
+      } catch {
+        // Trigger dispatch failures must never surface as a sync error.
+      }
+    }
 
     return { row, created };
   }

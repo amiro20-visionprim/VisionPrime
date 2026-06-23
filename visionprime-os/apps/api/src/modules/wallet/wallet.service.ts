@@ -29,6 +29,11 @@ export interface WalletServiceDeps {
   /** Resolves a customer's display name for audit logs; injected to avoid
    * the wallet module importing the customers module directly. */
   getCustomerName?: (customerId: string) => Promise<string | null>;
+  /** Fires the `wallet_credited` automation trigger after a manual
+   * credit. Never invoked for automation-driven credits themselves
+   * (those call manualCredit with skipAutomationTrigger=true) — this is
+   * the loop-prevention guard described in the Phase 12 binding rules. */
+  onWalletCredited?: (params: { customerId: string; amount: number; ledgerEntryId: string }) => void | Promise<void>;
 }
 
 export class WalletService {
@@ -49,8 +54,23 @@ export class WalletService {
     return { rows: result.rows, meta: toPaginationMeta(page, pageSize, result.totalItems) };
   }
 
-  async manualCredit(customerId: string, input: ManualEntryInput, actor: WalletActor) {
-    return this.recordManualEntry(customerId, "credit", "manual_credit", input, actor);
+  /**
+   * `skipAutomationTrigger` is set internally by automation's own
+   * add_cashback action dispatch so that automation-driven credits never
+   * re-fire the `wallet_credited` trigger — only genuine manual/admin
+   * credits do. This is the loop-prevention mechanism described in the
+   * Phase 12 binding rules.
+   */
+  async manualCredit(customerId: string, input: ManualEntryInput, actor: WalletActor, skipAutomationTrigger = false) {
+    const result = await this.recordManualEntry(customerId, "credit", "manual_credit", input, actor);
+    if (!skipAutomationTrigger && this.deps.onWalletCredited) {
+      try {
+        await this.deps.onWalletCredited({ customerId, amount: input.amount, ledgerEntryId: result.entry.id });
+      } catch {
+        // Trigger dispatch failures must never surface as a wallet API error.
+      }
+    }
+    return result;
   }
 
   async manualDebit(customerId: string, input: ManualEntryInput, actor: WalletActor) {

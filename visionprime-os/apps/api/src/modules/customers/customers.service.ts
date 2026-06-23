@@ -15,6 +15,9 @@ export interface CustomersServiceDeps {
    * Customer 360 view.
    */
   listOrdersByCustomer?: (customerId: string) => Promise<Customer360OrderRow[]>;
+  /** Fires the `customer_created` automation trigger. Fire-and-forget —
+   * never throws past create(). */
+  onCustomerCreated?: (customer: PublicCustomer) => void | Promise<void>;
 }
 
 export interface ActorContext {
@@ -68,6 +71,14 @@ export class CustomersService {
       targetId: created.id,
       after: publicCustomer,
     });
+
+    if (this.deps.onCustomerCreated) {
+      try {
+        await this.deps.onCustomerCreated(publicCustomer);
+      } catch {
+        // Trigger dispatch failures must never surface as a customer API error.
+      }
+    }
 
     return publicCustomer;
   }
