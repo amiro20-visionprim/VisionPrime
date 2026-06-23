@@ -4,6 +4,7 @@ import { asyncHandler } from "../../common/async-handler";
 import { sendSuccess, sendError } from "../../common/response";
 import { createRequireAuth, requirePermission } from "../../common/auth/auth-middleware";
 import { HttpError } from "../../common/http-error";
+import { createCampaignSendRateLimiter } from "../../common/rate-limit";
 import { normalizePageParams } from "../audit/audit.service";
 import { CampaignsService } from "./campaigns.service";
 import { campaignPreviewSchema, newCampaignSchema, updateCampaignSchema } from "./campaigns.dto";
@@ -118,6 +119,7 @@ export function createCampaignsRouter(deps: CampaignsControllerDeps): Router {
     "/:id/send",
     requireAuth,
     requirePermission("campaign:send"),
+    createCampaignSendRateLimiter(),
     asyncHandler(async (req, res) => {
       const auth = requireAuthContext(req);
       const campaign = await deps.campaignsService.sendCampaign(req.params.id, { userId: auth.userId });

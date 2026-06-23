@@ -1,11 +1,20 @@
 import express, { Express } from "express";
 import cors from "cors";
+import helmet from "helmet";
 import { Logger } from "@visionprime/logger";
 import { Db } from "@visionprime/database";
 import { requestContextMiddleware } from "./common/request-context";
 import { createErrorFilter, notFoundHandler } from "./common/error-filter";
 import { healthRouter } from "./modules/health/health.controller";
 import { versionRouter } from "./modules/version/version.controller";
+import {
+  createCampaignSendRateLimiter,
+  createLoginRateLimiter,
+  createPluginApiRateLimiter,
+  createReservationRateLimiter,
+  createWebhookRateLimiter,
+  createGlobalRateLimiter,
+} from "./common/rate-limit";
 
 import { createDbAuditLogRepository, createDbActivityLogRepository, createDbSecurityEventRepository } from "./modules/audit/audit.repository.db";
 import { AuditService } from "./modules/audit/audit.service";
@@ -111,6 +120,28 @@ export interface CreateAppOptions {
 }
 
 /**
+ * Resolves the CORS allowlist from ADMIN_ORIGIN (comma-separated list of
+ * allowed origins for the admin SPA — follows the same "secrets/config
+ * only ever come from env" convention as INTEGRATION_ENCRYPTION_KEY).
+ *
+ * When unset (e.g. local dev, tests), falls back to reflecting the
+ * request origin (current behavior) rather than breaking existing
+ * deployments that haven't set the new var yet — this is documented as
+ * a known gap to close operationally in /docs/security-review.md and
+ * /docs/deployment-guide.md, not a silent `*` wildcard.
+ */
+function resolveCorsOrigins(): string[] | boolean {
+  const raw = process.env.ADMIN_ORIGIN;
+  if (!raw) {
+    return true;
+  }
+  return raw
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
+/**
  * Builds the Express app without starting it listening — kept separate
  * from main.ts so tests can import and exercise the app directly.
  *
@@ -122,7 +153,20 @@ export function createApp(logger: Logger, options: CreateAppOptions): Express {
   const app = express();
   const { db, jwt, integrationEncryptionKey } = options;
 
-  app.use(cors());
+  // Security headers (helmet). contentSecurityPolicy/crossOriginEmbedderPolicy
+  // are disabled here: this is a JSON API with no HTML/script responses of
+  // its own, and a strict CSP/COEP on a pure JSON API can produce
+  // surprising browser behavior for the admin SPA fetching across origins
+  // without adding real protection (there's no HTML being served to
+  // misconfigure). All other helmet defaults (HSTS, X-Content-Type-Options,
+  // X-Frame-Options, etc.) stay enabled.
+  app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+
+  app.use(cors({ origin: resolveCorsOrigins(), credentials: true }));
+
+  // Generous global default rate limit, defense-in-depth only — route
+  // specific limiters below are the real control for sensitive surfaces.
+  app.use(createGlobalRateLimiter());
 
   // --- Phase 03: auth, RBAC, business settings, audit/security logging ---
   const auditLogRepository = createDbAuditLogRepository(db);
@@ -197,6 +241,7 @@ export function createApp(logger: Logger, options: CreateAppOptions): Express {
   // raw-body-capturing JSON parser (needed for HMAC signature
   // verification) and is never gated by requireAuth/JWT — only by webhook
   // signature verification. Must stay outside /api/admin.
+  app.use("/api/webhooks/wordpress", createWebhookRateLimiter());
   app.use(
     "/api/webhooks/wordpress",
     createWordPressWebhooksRouter({
@@ -295,6 +340,7 @@ export function createApp(logger: Logger, options: CreateAppOptions): Express {
     rewardsService,
     loyaltyService,
   });
+  app.use("/api/wp-plugin", createPluginApiRateLimiter());
   app.use(
     "/api/wp-plugin",
     createWpPluginRouter({

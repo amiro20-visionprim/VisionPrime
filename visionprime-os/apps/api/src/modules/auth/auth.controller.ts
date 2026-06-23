@@ -4,6 +4,7 @@ import { validate } from "@visionprime/validation";
 import { sendSuccess, sendError } from "../../common/response";
 import { createRequireAuth } from "../../common/auth/auth-middleware";
 import { HttpError } from "../../common/http-error";
+import { createLoginRateLimiter } from "../../common/rate-limit";
 import { loginSchema, logoutSchema, refreshSchema } from "./auth.dto";
 import { AuthService } from "./auth.service";
 
@@ -16,7 +17,9 @@ export function createAuthRouter(deps: AuthControllerDeps): Router {
   const router = Router();
   const requireAuth = createRequireAuth(deps.accessSecret);
 
-  router.post("/login", asyncHandler(async (req, res) => {
+  // Tight rate limit (see common/rate-limit.ts) — login is the most
+  // brute-force-prone unauthenticated surface in the API.
+  router.post("/login", createLoginRateLimiter(), asyncHandler(async (req, res) => {
     const result = validate(loginSchema, req.body);
     if (!result.success) {
       sendError(res, "VALIDATION_FAILED", "One or more fields are invalid.", 400, result.fieldErrors);

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { asyncHandler } from "../../common/async-handler";
 import { sendError, sendSuccess } from "../../common/response";
+import { createReservationRateLimiter } from "../../common/rate-limit";
 import { validate } from "@visionprime/validation";
 import { CustomersRepository } from "../customers/customers.repository";
 import { WordPressConnectionRepository } from "../wordpress/wordpress.repository";
@@ -40,6 +41,11 @@ export function createWpPluginRouter(deps: WpPluginControllerDeps): Router {
   });
 
   router.use(requirePluginAuth);
+
+  // Applied to reservation create endpoints only (see common/rate-limit.ts)
+  // — cart validate/release/confirm are not rate-limited here since they
+  // are not the create operation and are needed at normal checkout pace.
+  const reservationRateLimiter = createReservationRateLimiter();
 
   router.get(
     "/customer/me",
@@ -111,6 +117,7 @@ export function createWpPluginRouter(deps: WpPluginControllerDeps): Router {
 
   router.post(
     "/checkout/wallet/reserve",
+    reservationRateLimiter,
     asyncHandler(async (req: PluginAuthedRequest, res) => {
       const result = validate(walletAmountSchema, req.body);
       if (!result.success) {
@@ -169,6 +176,7 @@ export function createWpPluginRouter(deps: WpPluginControllerDeps): Router {
 
   router.post(
     "/checkout/reward/reserve",
+    reservationRateLimiter,
     asyncHandler(async (req: PluginAuthedRequest, res) => {
       const result = validate(rewardCartKeySchema, req.body);
       if (!result.success) {

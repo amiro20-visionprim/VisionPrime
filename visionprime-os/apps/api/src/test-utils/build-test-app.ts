@@ -1,7 +1,9 @@
 import express, { Express } from "express";
+import helmet from "helmet";
 import { createLogger } from "@visionprime/logger";
 import { requestContextMiddleware } from "../common/request-context";
 import { createErrorFilter, notFoundHandler } from "../common/error-filter";
+import { createPluginApiRateLimiter, createWebhookRateLimiter } from "../common/rate-limit";
 
 import { createMemoryAuditLogRepository, createMemoryActivityLogRepository, createMemorySecurityEventRepository } from "../modules/audit/audit.repository.memory";
 import { AuditService } from "../modules/audit/audit.service";
@@ -171,6 +173,7 @@ export function buildTestApp(options?: {
   wooCommerceClient?: WooCommerceApiClient;
 }): TestAppHarness {
   const app = express();
+  app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 
   const auditLogRepository = createMemoryAuditLogRepository();
   const activityLogRepository = createMemoryActivityLogRepository();
@@ -267,6 +270,7 @@ export function buildTestApp(options?: {
     reversePointsForOrder: (woocommerceOrderId) => pointsService.reversePointsForOrder(woocommerceOrderId),
   });
 
+  app.use("/api/webhooks/wordpress", createWebhookRateLimiter());
   app.use(
     "/api/webhooks/wordpress",
     createWordPressWebhooksRouter({
@@ -336,6 +340,7 @@ export function buildTestApp(options?: {
     rewardsService,
     loyaltyService,
   });
+  app.use("/api/wp-plugin", createPluginApiRateLimiter());
   app.use(
     "/api/wp-plugin",
     createWpPluginRouter({
